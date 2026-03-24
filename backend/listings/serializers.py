@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Listing, ListingImage
+from .models import Category, Listing, ListingImage
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
 
 
 class ListingImageSerializer(serializers.ModelSerializer):
@@ -11,6 +17,14 @@ class ListingImageSerializer(serializers.ModelSerializer):
 class ListingSerializer(serializers.ModelSerializer):
     seller_email = serializers.ReadOnlyField(source='seller.email')
     images = ListingImageSerializer(many=True, read_only=True)
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='category',
+        write_only=True,
+        required=False,
+        allow_null=True
+    )
 
     class Meta:
         model = Listing
@@ -18,6 +32,8 @@ class ListingSerializer(serializers.ModelSerializer):
             'id',
             'seller',
             'seller_email',
+            'category',
+            'category_id',
             'title',
             'description',
             'price',
@@ -25,3 +41,4 @@ class ListingSerializer(serializers.ModelSerializer):
             'images',
             'created_at',
         ]
+        read_only_fields = ['created_at']

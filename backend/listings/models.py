@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 
 class Category(models.Model):
@@ -8,6 +9,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+
 class Listing(models.Model):
     STATUS_CHOICES = [
         ('ACTIVE', 'Active'),
@@ -15,25 +17,32 @@ class Listing(models.Model):
         ('SOLD', 'Sold'),
         ('CANCELLED', 'Cancelled'),
     ]
-    
-    category = models.ForeignKey(
-    Category,
-    on_delete=models.PROTECT,
-    related_name='listings',
-    null=True,
-    blank=True
-    )
 
     seller = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='listings'
     )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name='listings',
+        null=True,
+        blank=True
+    )
     title = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        if self.price < 0:
+            raise ValidationError("Price cannot be negative.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
