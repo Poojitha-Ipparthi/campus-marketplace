@@ -1,10 +1,11 @@
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-
-from .models import Order
-from .serializers import OrderSerializer
+from .models import Order, Payment
+from .serializers import OrderSerializer, PaymentSerializer
 from .permissions import IsBuyerOrSellerForRead
+from django.db import transaction
+from django.core.exceptions import ValidationError
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -25,6 +26,49 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated, IsBuyerOrSellerForRead]
 
 
+class PaymentListView(generics.ListAPIView):
+    serializer_class = PaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Payment.objects.filter(order__buyer=self.request.user).order_by('-created_at')
+
+
+class PaymentDetailView(generics.RetrieveAPIView):
+    serializer_class = PaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Payment.objects.filter(order__buyer=self.request.user)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_payment_intent(request):
+    order_id = request.data.get("order")
+    try:
+        order = Order.objects.get(pk=order_id, buyer=request.user)
+    except Order.DoesNotExist:
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    payment = Payment.objects.create(
+        order=order,
+        stripe_payment_intent_id=f"pi_mock_{order.id}",
+        amount=order.offered_price,
+        currency='USD',
+        status='PENDING'
+    )
+
+    return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def payment_webhook(request):
+    # placeholder for Stripe webhook
+    return Response({"detail": "Webhook received."}, status=status.HTTP_200_OK)
+
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def accept_order(request, pk):
@@ -36,16 +80,21 @@ def accept_order(request, pk):
     if request.user != order.listing.seller:
         return Response({'detail': 'Only the seller can accept this order.'}, status=status.HTTP_403_FORBIDDEN)
 
-    if order.status not in ['PENDING', 'NEGOTIATING']:
-        return Response({'detail': 'Only pending or negotiating orders can be accepted.'}, status=status.HTTP_400_BAD_REQUEST)
+    if order.status != 'PENDING':
+        return Response({'detail': 'Only pending orders can be accepted.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    order.status = 'ACCEPTED'
-    order.save()
+    try:
+        with transaction.atomic():
+            order.status = 'ACCEPTED'
+            order.save()
 
-    order.listing.status = 'RESERVED'
-    order.listing.save()
+            order.listing.status = 'RESERVED'
+            order.listing.save()
 
-    return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+
+    except ValidationError as e:
+        return Response({'detail': e.messages}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -59,13 +108,12 @@ def reject_order(request, pk):
     if request.user != order.listing.seller:
         return Response({'detail': 'Only the seller can reject this order.'}, status=status.HTTP_403_FORBIDDEN)
 
-    if order.status not in ['PENDING', 'NEGOTIATING']:
-        return Response({'detail': 'Only pending or negotiating orders can be rejected.'}, status=status.HTTP_400_BAD_REQUEST)
+    if order.status != 'PENDING':
+        return Response({'detail': 'Only pending orders can be rejected.'}, status=status.HTTP_400_BAD_REQUEST)
 
     order.status = 'REJECTED'
     order.save()
-
-    return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+    return Response(OrderSerializer(order).data)
 
 
 @api_view(['POST'])
@@ -79,17 +127,18 @@ def cancel_order(request, pk):
     if request.user != order.buyer:
         return Response({'detail': 'Only the buyer can cancel this order.'}, status=status.HTTP_403_FORBIDDEN)
 
-    if order.status not in ['PENDING', 'NEGOTIATING', 'ACCEPTED']:
+    if order.status not in ['PENDING', 'ACCEPTED']:
         return Response({'detail': 'This order cannot be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    order.status = 'CANCELLED'
-    order.save()
+    with transaction.atomic():
+        order.status = 'CANCELLED'
+        order.save()
 
-    if order.listing.status == 'RESERVED':
-        order.listing.status = 'ACTIVE'
-        order.listing.save()
+        if order.listing.status == 'RESERVED':
+            order.listing.status = 'AVAILABLE'
+            order.listing.save()
 
-    return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+    return Response(OrderSerializer(order).data)
 
 
 @api_view(['POST'])
@@ -106,10 +155,11 @@ def complete_order(request, pk):
     if order.status != 'ACCEPTED':
         return Response({'detail': 'Only accepted orders can be completed.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    order.status = 'COMPLETED'
-    order.save()
+    with transaction.atomic():
+        order.status = 'COMPLETED'
+        order.save()
 
-    order.listing.status = 'SOLD'
-    order.listing.save()
+        order.listing.status = 'SOLD'
+        order.listing.save()
 
-    return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+    return Response(OrderSerializer(order).data)

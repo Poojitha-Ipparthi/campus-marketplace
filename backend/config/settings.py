@@ -42,7 +42,9 @@ INSTALLED_APPS = [
     'users',
     'listings',
     'orders',
-    'reviews'
+    'reviews',
+    'messaging',
+    'reporting'
 ]
 
 REST_FRAMEWORK = {

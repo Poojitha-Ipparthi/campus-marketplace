@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, EmailVerification
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -18,3 +18,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'verified', 'trust_score', 'created_at']
+
+
+class EmailVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailVerification
+        fields = ['id', 'user', 'code', 'expires_at', 'is_used', 'created_at']

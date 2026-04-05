@@ -1,12 +1,10 @@
 from rest_framework import serializers
-from .models import Order
+from .models import Order, Payment
 
 
 class OrderSerializer(serializers.ModelSerializer):
     buyer_email = serializers.ReadOnlyField(source='buyer.email')
     listing_title = serializers.ReadOnlyField(source='listing.title')
-    listing_seller_id = serializers.ReadOnlyField(source='listing.seller.id')
-    listing_seller_email = serializers.ReadOnlyField(source='listing.seller.email')
 
     class Meta:
         model = Order
@@ -16,11 +14,24 @@ class OrderSerializer(serializers.ModelSerializer):
             'buyer_email',
             'listing',
             'listing_title',
-            'listing_seller_id',
-            'listing_seller_email',
             'offered_price',
             'status',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['created_at', 'updated_at', 'buyer']
+        read_only_fields = ['buyer', 'created_at', 'updated_at']
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = [
+            'id',
+            'order',
+            'stripe_payment_intent_id',
+            'amount',
+            'currency',
+            'status',
+            'created_at',
+            'updated_at',
+        ]

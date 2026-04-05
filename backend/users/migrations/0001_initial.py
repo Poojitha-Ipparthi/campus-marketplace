@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
                 ('is_active', models.BooleanField(default=True, help_text='Designates whether this user should be treated as active. Unselect this instead of deleting accounts.', verbose_name='active')),
                 ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
-                ('email', models.EmailField(max_length=254, unique=True)),
+                ('email', models.EmailField(max_length=128, unique=True)),
                 ('verified', models.BooleanField(default=False)),
                 ('role', models.CharField(choices=[('USER', 'User'), ('ADMIN', 'Admin')], default='USER', max_length=10)),
                 ('trust_score', models.DecimalField(decimal_places=2, default=0.0, max_digits=3)),

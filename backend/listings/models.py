@@ -12,10 +12,15 @@ class Category(models.Model):
 
 class Listing(models.Model):
     STATUS_CHOICES = [
-        ('ACTIVE', 'Active'),
+        ('AVAILABLE', 'Available'),
         ('RESERVED', 'Reserved'),
         ('SOLD', 'Sold'),
         ('CANCELLED', 'Cancelled'),
+    ]
+
+    CONDITION_CHOICES = [
+        ('NEW', 'New'),
+        ('USED', 'Used'),
     ]
 
     seller = models.ForeignKey(
@@ -33,7 +38,8 @@ class Listing(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
+    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default='USED')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='AVAILABLE')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):

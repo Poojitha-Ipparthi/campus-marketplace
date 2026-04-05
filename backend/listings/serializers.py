@@ -37,8 +37,9 @@ class ListingSerializer(serializers.ModelSerializer):
             'title',
             'description',
             'price',
+            'condition',
             'status',
             'images',
             'created_at',
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['seller', 'created_at']
