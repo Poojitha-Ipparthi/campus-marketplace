@@ -10,6 +10,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'password', 'verified', 'trust_score', 'created_at']
         read_only_fields = ['verified', 'trust_score', 'created_at']
 
+    def validate_email(self, value):
+        if not value.endswith('.edu'):
+            raise serializers.ValidationError("Only .edu email addresses are allowed to register.")
+        return value
+
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
 
