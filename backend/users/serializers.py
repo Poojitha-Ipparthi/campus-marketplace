@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import User, EmailVerification
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -45,3 +47,13 @@ class EmailVerificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmailVerification
         fields = ['id', 'user', 'code', 'expires_at', 'is_used', 'created_at']
+        
+
+class VerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        if not self.user.verified:
+            raise AuthenticationFailed("Please verify your email before logging in.")
+
+        return data

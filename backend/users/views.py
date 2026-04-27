@@ -7,8 +7,10 @@ from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import EmailVerification
 from .serializers import RegisterSerializer, UserSerializer
+from .models import User, EmailVerification
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import VerifiedTokenObtainPairSerializer
 
 class IsVerified(permissions.BasePermission):
     message = "Please verify your email before accessing this feature."
@@ -30,29 +32,48 @@ class MeView(APIView):
 
 
 class SendVerificationCodeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        # Generate a random 6-digit code
+        email = request.data.get("email")
+
+        if not email:
+            return Response(
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            return Response(
+                {"detail": "No account found with this email."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if user.verified:
+            return Response(
+                {"detail": "This email is already verified."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         code = ''.join(random.choices(string.digits, k=6))
 
-        # Save to database with 10-minute expiry
         EmailVerification.objects.create(
-            user=request.user,
+            user=user,
             code=code,
             expires_at=timezone.now() + timedelta(minutes=10)
         )
 
-        # Send the real email
         try:
             send_mail(
                 subject='Your Campus Marketplace Verification Code',
                 message=f'Your verification code is: {code}\n\nThis code expires in 10 minutes.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[request.user.email],
+                recipient_list=[user.email],
                 fail_silently=False,
             )
-        except Exception as e:
+        except Exception:
             return Response(
                 {"detail": "Failed to send verification email. Please try again."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -65,27 +86,54 @@ class SendVerificationCodeView(APIView):
 
 
 class VerifyCodeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        email = request.data.get("email")
         code = request.data.get("code")
 
+        if not email or not code:
+            return Response(
+                {"detail": "Email and verification code are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            return Response(
+                {"detail": "No account found with this email."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         verification = EmailVerification.objects.filter(
-            user=request.user,
+            user=user,
             code=code,
             is_used=False
         ).order_by('-created_at').first()
 
         if not verification:
-            return Response({"detail": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid verification code."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if verification.is_expired():
-            return Response({"detail": "Verification code expired."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Verification code expired."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         verification.is_used = True
         verification.save()
 
-        request.user.verified = True
-        request.user.save()
+        user.verified = True
+        user.save()
 
-        return Response({"detail": "Email verified successfully."}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "Email verified successfully."},
+            status=status.HTTP_200_OK
+        )
+        
+class VerifiedTokenObtainPairView(TokenObtainPairView):
+    serializer_class = VerifiedTokenObtainPairSerializer

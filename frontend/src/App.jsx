@@ -1,12 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 
+// Pages YOU own
 import Home from "./pages/Home";
+import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
-import Orders from "./pages/Orders";
-import Checkout from "./pages/Checkout";
-import Messages from "./pages/Messages";
-import Profile from "./pages/Profile";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Verification from "./pages/Verification";
+import UserProfile from "./pages/UserProfile";
+import PublicProfile from "./pages/PublicProfile";
 
 export default function App() {
   return (
@@ -14,11 +17,15 @@ export default function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/listings" element={<Listings />} />
           <Route path="/listings/:id" element={<ListingDetail />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/checkout/:orderId" element={<Checkout />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/profile" element={<Profile />} />
+
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/verify" element={<Verification />} />
+
+          <Route path="/profile" element={<UserProfile />} />
+          <Route path="/users/:id" element={<PublicProfile />} />
         </Routes>
       </Layout>
     </BrowserRouter>

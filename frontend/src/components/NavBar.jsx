@@ -2,11 +2,12 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
   const navigate = useNavigate();
+  const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
 
   function logout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    navigate("/");
+    navigate("/login");
   }
 
   return (
@@ -17,24 +18,34 @@ export default function NavBar() {
 
       <nav className="nav-links">
         <NavLink to="/" className="nav-link">
+          Home
+        </NavLink>
+
+        <NavLink to="/listings" className="nav-link">
           Listings
         </NavLink>
 
-        <NavLink to="/orders" className="nav-link">
-          Orders
-        </NavLink>
+        {isLoggedIn ? (
+          <>
+            <NavLink to="/profile" className="nav-link">
+              Profile
+            </NavLink>
 
-        <NavLink to="/messages" className="nav-link">
-          Messages
-        </NavLink>
+            <button className="nav-button" type="button" onClick={logout}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <NavLink to="/login" className="nav-link">
+              Login
+            </NavLink>
 
-        <NavLink to="/profile" className="nav-link">
-          Profile
-        </NavLink>
-
-        <button className="nav-button" onClick={logout}>
-          Logout
-        </button>
+            <NavLink to="/signup" className="nav-link">
+              Sign Up
+            </NavLink>
+          </>
+        )}
       </nav>
     </header>
   );
