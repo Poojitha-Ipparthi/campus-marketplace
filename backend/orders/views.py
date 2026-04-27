@@ -8,6 +8,8 @@ from listings.models import Listing
 from .models import Order, Payment
 from .permissions import IsBuyerOrSellerForRead
 from .serializers import OrderSerializer, PaymentSerializer
+import stripe
+from django.conf import settings
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -70,19 +72,33 @@ def create_payment_intent(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    payment = Payment.objects.create(
-        order=order,
-        stripe_payment_intent_id=f"pi_mock_{order.id}",
-        amount=order.offered_price,
-        currency="USD",
-        status=Payment.Status.PENDING,
-    )
+    try:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
 
-    return Response(
-        PaymentSerializer(payment).data,
-        status=status.HTTP_201_CREATED
-    )
+        intent = stripe.PaymentIntent.create(
+            amount=int(order.offered_price * 100),  # Stripe uses cents
+            currency="usd",
+            metadata={"order_id": order.id}
+        )
 
+        payment = Payment.objects.create(
+            order=order,
+            stripe_payment_intent_id=intent.id,
+            amount=order.offered_price,
+            currency="USD",
+            status=Payment.Status.PENDING,
+        )
+
+        return Response({
+            "payment": PaymentSerializer(payment).data,
+            "client_secret": intent.client_secret
+        }, status=status.HTTP_201_CREATED)
+
+    except stripe.StripeError as e:
+        return Response(
+            {"detail": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])

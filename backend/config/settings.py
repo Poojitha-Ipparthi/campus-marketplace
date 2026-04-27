@@ -166,3 +166,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'campusmarketplace.noreply@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = 'Campus Marketplace <campusmarketplace.noreply@gmail.com>'
+
+# Stripe Configuration
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
