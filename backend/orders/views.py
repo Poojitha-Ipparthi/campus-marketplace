@@ -8,6 +8,8 @@ from listings.models import Listing
 from .models import Order, Payment
 from .permissions import IsBuyerOrSellerForRead
 from .serializers import OrderSerializer, PaymentSerializer
+import stripe
+from django.conf import settings
 
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -90,6 +92,40 @@ def create_payment_intent(request):
             status=status.HTTP_409_CONFLICT,
         )
 
+    existing_payment = Payment.objects.filter(order=order).first()
+    if existing_payment:
+        return Response(
+            {"detail": "Payment already exists for this order."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+
+        intent = stripe.PaymentIntent.create(
+            amount=int(order.offered_price * 100),  # Stripe uses cents
+            currency="usd",
+            metadata={"order_id": order.id}
+        )
+
+        payment = Payment.objects.create(
+            order=order,
+            stripe_payment_intent_id=intent.id,
+            amount=order.offered_price,
+            currency="USD",
+            status=Payment.Status.PENDING,
+        )
+
+        return Response({
+            "payment": PaymentSerializer(payment).data,
+            "client_secret": intent.client_secret
+        }, status=status.HTTP_201_CREATED)
+
+    except stripe.StripeError as e:
+        return Response(
+            {"detail": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
@@ -102,12 +138,16 @@ def payment_webhook(request):
 def accept_order(request, pk):
     try:
         with transaction.atomic():
-            order = (
-                Order.objects.select_for_update()
-                .select_related("listing")
-                .get(pk=pk)
-            )
-            listing = Listing.objects.select_for_update().get(pk=order.listing_id)
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
+
+            if order.status != Order.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending orders can be accepted."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            order.status = Order.Status.ACCEPTED
+            order.save(update_fields=["status", "updated_at"])
 
             if request.user != listing.seller:
                 return Response(
@@ -137,7 +177,6 @@ def accept_order(request, pk):
             {"detail": "Order acceptance conflicted with another request."},
             status=status.HTTP_409_CONFLICT,
         )
-
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
