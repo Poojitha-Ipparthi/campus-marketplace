@@ -1,5 +1,9 @@
+import random
+import string
 from datetime import timedelta
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,13 +27,35 @@ class SendVerificationCodeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        code = "123456"  # replace later with real random generation + email send
+        # Generate a random 6-digit code
+        code = ''.join(random.choices(string.digits, k=6))
+
+        # Save to database with 10-minute expiry
         EmailVerification.objects.create(
             user=request.user,
             code=code,
             expires_at=timezone.now() + timedelta(minutes=10)
         )
-        return Response({"detail": "Verification code generated."}, status=status.HTTP_201_CREATED)
+
+        # Send the real email
+        try:
+            send_mail(
+                subject='Your Campus Marketplace Verification Code',
+                message=f'Your verification code is: {code}\n\nThis code expires in 10 minutes.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[request.user.email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            return Response(
+                {"detail": "Failed to send verification email. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response(
+            {"detail": "Verification code sent to your email."},
+            status=status.HTTP_201_CREATED
+        )
 
 
 class VerifyCodeView(APIView):
