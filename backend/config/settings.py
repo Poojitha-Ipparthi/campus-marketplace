@@ -170,3 +170,15 @@ DEFAULT_FROM_EMAIL = 'Campus Marketplace <campusmarketplace.noreply@gmail.com>'
 # Stripe Configuration
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+
+# Firebase Configuration
+import firebase_admin
+from firebase_admin import credentials as firebase_credentials
+
+if not firebase_admin._apps:
+    cred = firebase_credentials.Certificate(
+        BASE_DIR / 'firebase_credentials.json'
+    )
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET')
+    })
