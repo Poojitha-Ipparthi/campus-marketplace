@@ -56,6 +56,12 @@ class SendVerificationCodeView(APIView):
                 {"detail": "This email is already verified."},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Invalidate any existing unused codes first
+        EmailVerification.objects.filter(
+            user=user,
+            is_used=False
+        ).update(is_used=True)
 
         code = ''.join(random.choices(string.digits, k=6))
 

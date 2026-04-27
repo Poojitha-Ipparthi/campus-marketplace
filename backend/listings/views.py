@@ -62,6 +62,24 @@ class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ListingSerializer
     permission_classes = [IsOwnerOrReadOnly]
 
+    def perform_destroy(self, instance):
+        from firebase_admin import storage
+        for image in instance.images.all():
+            try:
+                bucket = storage.bucket()
+                # Extract path from URL and delete from Firebase
+                url = image.image_url
+                if "firebasestorage" in url:
+                    path = url.split("/o/")[1].split("?")[0]
+                    import urllib.parse
+                    path = urllib.parse.unquote(path)
+                    blob = bucket.blob(path)
+                    blob.delete()
+            except Exception:
+                pass
+        cache.delete("listings_all")
+        instance.delete()
+
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
