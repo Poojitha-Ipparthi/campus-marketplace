@@ -14,6 +14,9 @@ from .models import Order, Payment
 from .permissions import IsBuyerOrSellerForRead
 from .serializers import OrderSerializer, PaymentSerializer
 
+from django.utils import timezone
+from datetime import timedelta
+
 
 class OrderListCreateView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
@@ -24,6 +27,22 @@ class OrderListCreateView(generics.ListCreateAPIView):
         return Order.objects.filter(buyer=user).order_by("-created_at")
 
     def perform_create(self, serializer):
+        from listings.models import Listing
+        listing = serializer.validated_data.get('listing')
+        
+        # Check if reservation has expired and release it
+        if listing and listing.status == Listing.Status.RESERVED:
+            expired_order = Order.objects.filter(
+                listing=listing,
+                status=Order.Status.ACCEPTED,
+                reserved_until__lt=timezone.now()
+            ).first()
+            
+            if expired_order:
+                expired_order.cancel_due_to_expiration()
+                listing.status = Listing.Status.AVAILABLE
+                listing.save(update_fields=["status"])
+        
         serializer.save(buyer=self.request.user)
 
 
@@ -182,7 +201,8 @@ def accept_order(request, pk):
                 )
 
             order.status = Order.Status.ACCEPTED
-            order.save(update_fields=["status", "updated_at"])
+            order.reserved_until = timezone.now() + timedelta(minutes=10)
+            order.save(update_fields=["status", "reserved_until", "updated_at"])
 
             listing.status = Listing.Status.RESERVED
             listing.save(update_fields=["status"])
