@@ -25,7 +25,7 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
-        if self.order.status != 'COMPLETED':
+        if self.order.status != Order.Status.COMPLETED:
             raise ValidationError("Review can only be created for completed orders.")
 
         if self.reviewer != self.order.buyer:
@@ -35,7 +35,7 @@ class Review(models.Model):
             raise ValidationError("Review must be for the seller of the listing.")
 
     def save(self, *args, **kwargs):
-        self.clean()
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):

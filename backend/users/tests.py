@@ -40,13 +40,14 @@ class TrustScoreTestCase(TestCase):
         return order
 
     def create_cancelled_order(self):
-        listing = self.create_listing()
-        return Order.objects.create(
-            buyer=self.buyer,
-            listing=listing,
-            offered_price=100,
-            status=Order.Status.CANCELLED,
+       listing = self.create_listing()
+       order = Order.objects.create(
+           buyer=self.buyer,
+           listing=listing,
+           offered_price=100,
         )
+       order.cancel_by_buyer()
+       return order
         
         # New user baseline
     def test_new_user_trust_score_is_zero(self):
@@ -132,7 +133,7 @@ class TrustScoreTestCase(TestCase):
 
         self.seller.refresh_from_db()
 
-        # 5.00 - 0.60 = 4.40
+        # Final score after completion bonus and cancellation penalty
         self.assertEqual(self.seller.trust_score, Decimal("4.55"))
         
     # Report penalty

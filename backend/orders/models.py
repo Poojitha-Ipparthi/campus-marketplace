@@ -91,6 +91,27 @@ class Order(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    def accept(self):
+        if self.status != self.Status.PENDING:
+            raise ValidationError("Only pending orders can be accepted.")
+
+        self.status = self.Status.ACCEPTED
+        self.save(update_fields=["status", "updated_at"])
+
+    def reject(self):
+        if self.status != self.Status.PENDING:
+            raise ValidationError("Only pending orders can be rejected.")
+
+        self.status = self.Status.REJECTED
+        self.save(update_fields=["status", "updated_at"])
+
+    def complete(self):
+        if self.status != self.Status.ACCEPTED:
+            raise ValidationError("Only accepted orders can be completed.")
+
+        self.status = self.Status.COMPLETED
+        self.save(update_fields=["status", "updated_at"])
+
     def cancel_by_buyer(self):
         if self.status not in [self.Status.PENDING, self.Status.ACCEPTED]:
             raise ValidationError("Only pending or accepted orders can be cancelled by the buyer.")
@@ -142,10 +163,10 @@ class Payment(models.Model):
         FAILED = "FAILED", "Failed"
         REFUNDED = "REFUNDED", "Refunded"
 
-    order = models.ForeignKey(
+    order = models.OneToOneField(
         Order,
         on_delete=models.CASCADE,
-        related_name="payments"
+        related_name="payment"
     )
     stripe_payment_intent_id = models.CharField(max_length=255, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
