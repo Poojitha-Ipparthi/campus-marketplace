@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from .models import Listing, Category, ListingImage
 from .serializers import ListingSerializer, CategorySerializer
 from .permissions import IsOwnerOrReadOnly
@@ -31,12 +32,15 @@ class ListingListCreateView(generics.ListCreateAPIView):
     ordering = ["-created_at"]
 
     def get_queryset(self):
+        cached = cache.get("listings_all")
+        if cached is not None:
+            return cached
         queryset = (
             Listing.objects.select_related("seller", "category")
             .prefetch_related("images")
             .order_by("-created_at")
         )
-
+        cache.set("listings_all", queryset, timeout=300)
         return queryset
 
     def get_permissions(self):
@@ -46,6 +50,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
+        cache.delete("listings_all")
 
 
 class ListingDetailView(generics.RetrieveUpdateDestroyAPIView):
