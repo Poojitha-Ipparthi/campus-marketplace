@@ -10,7 +10,18 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
 
-  if (token) {
+  const publicAuthRoutes = [
+    "/api/auth/login/",
+    "/api/auth/register/",
+    "/api/auth/send-verification-code/",
+    "/api/auth/verify-code/",
+  ];
+
+  const isPublicAuthRoute = publicAuthRoutes.some((route) =>
+    config.url?.includes(route)
+  );
+
+  if (token && !isPublicAuthRoute) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 

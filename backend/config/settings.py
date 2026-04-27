@@ -201,3 +201,4 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {
         'storageBucket': os.getenv('FIREBASE_STORAGE_BUCKET')
     })
+

@@ -1,135 +1,113 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getListing } from "../api/listingsApi";
-import { createOrder } from "../api/ordersApi";
+import StatusBadge from "../components/StatusBadge";
 
 export default function ListingDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+    const { id } = useParams();
 
-  const [item, setItem] = useState(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+    const [listing, setListing] = useState(null);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadItem();
-  }, [id]);
+    useEffect(() => {
+        loadListing();
+    }, [id]);
 
-  async function loadItem() {
-    try {
-      const res = await getListing(id);
-      setItem(res.data);
-    } catch {
-      setError("Could not load listing");
+    async function loadListing() {
+        try {
+            setLoading(true);
+            setError("");
+
+            const res = await getListing(id);
+            setListing(res.data);
+        } catch (err) {
+            setError("Could not load listing details.");
+        } finally {
+            setLoading(false);
+        }
     }
-  }
 
-  async function handleBuy() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const res = await createOrder({
-        listing: Number(id),
-        offered_price: item.price,
-      });
-
-      navigate(`/checkout/${res.data.id}`);
-    } catch (err) {
-      const message =
-        err.response?.data?.error?.message ||
-        err.response?.data?.detail ||
-        "Could not create order";
-
-      setError(String(message));
-    } finally {
-      setLoading(false);
+    if (loading) {
+        return (
+            <main className="container">
+                <p>Loading listing...</p>
+            </main>
+        );
     }
-  }
 
-  if (!item) {
+    if (error) {
+        return (
+            <main className="container">
+                <p className="error">{error}</p>
+                <Link className="text-link" to="/listings">
+                    Back to listings
+                </Link>
+            </main>
+        );
+    }
+
+    if (!listing) {
+        return (
+            <main className="container">
+                <p>Listing not found.</p>
+                <Link className="text-link" to="/listings">
+                    Back to listings
+                </Link>
+            </main>
+        );
+    }
+
+    const imageUrl = listing.images?.[0]?.image_url;
+
     return (
-      <div>
-        <header className="header">
-          <h1>Listing Detail</h1>
-        </header>
-
         <main className="container">
-          <p>Loading...</p>
-        </main>
-      </div>
-    );
-  }
-
-  const canBuy = item.status === "AVAILABLE";
-
-  return (
-    <div>
-      <header className="header">
-        <h1>{item.title}</h1>
-        <p>Listing details</p>
-      </header>
-
-      <main className="container">
-        <Link to="/" className="text-link">
-          ← Back to listings
-        </Link>
-
-        <div className="detail-layout">
-          <div className="detail-image">📦</div>
-
-          <div className="detail-info">
-            <h2>{item.title}</h2>
-
-            <p className="price large-price">
-              {Number(item.price) === 0 ? "Free" : `$${item.price}`}
-            </p>
-
-            <p>{item.description || "No description"}</p>
-
-            <p>
-              <strong>Condition:</strong> {item.condition}
-            </p>
-
-            <p>
-              <strong>Status:</strong> {item.status}
-            </p>
-
-            <p>
-              <strong>Seller:</strong> {item.seller_email || item.seller}
-            </p>
-
-            {error && <p className="error">{error}</p>}
-
-            <button
-              className="button"
-              onClick={handleBuy}
-              disabled={!canBuy || loading}
-            >
-              {loading
-                ? "Processing..."
-                : Number(item.price) === 0
-                  ? "Claim Item"
-                  : "Buy Now"}
-            </button>
-
-            <Link
-              className="secondary-link"
-              to={`/messages?listing=${item.id}&receiver=${item.seller}&title=${encodeURIComponent(
-                item.title
-              )}&seller=${encodeURIComponent(item.seller_email || "Seller")}`}
-            >
-              Message Seller
+            <Link className="text-link" to="/listings">
+                ← Back to listings
             </Link>
 
-            {!canBuy && (
-              <p className="warning">
-                This listing is not currently available.
-              </p>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+            <div className="detail-layout">
+                <div className="detail-image">
+                    {imageUrl ? <img src={imageUrl} alt={listing.title} /> : "📦"}
+                </div>
+
+                <section className="detail-info">
+                    <h1>{listing.title}</h1>
+
+                    <p>{listing.description || "No description provided."}</p>
+
+                    <p className="price large-price">
+                        {Number(listing.price) === 0 ? "Free" : `$${listing.price}`}
+                    </p>
+
+                    <p>
+                        <strong>Condition:</strong> {listing.condition}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong> <StatusBadge value={listing.status} />
+                    </p>
+
+                    <p>
+                        <strong>Seller:</strong>{" "}
+                        {listing.seller_email || `User #${listing.seller}`}
+                    </p>
+
+                    <p>
+                        <strong>Category:</strong>{" "}
+                        {listing.category_name ||
+                            listing.category?.name ||
+                            "Uncategorized"}
+                    </p>
+
+                    <Link
+                        className="button-link"
+                        to={`/users/${listing.seller}`}
+                    >
+                        View Seller Profile
+                    </Link>
+                </section>
+            </div>
+        </main>
+    );
 }
