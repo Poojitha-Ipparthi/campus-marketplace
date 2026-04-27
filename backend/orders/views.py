@@ -7,6 +7,8 @@ from rest_framework.response import Response
 import stripe
 from django.conf import settings
 
+from users.views import IsVerified
+
 from listings.models import Listing
 from .models import Order, Payment
 from .permissions import IsBuyerOrSellerForRead
@@ -15,7 +17,7 @@ from .serializers import OrderSerializer, PaymentSerializer
 
 class OrderListCreateView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsVerified]
 
     def get_queryset(self):
         user = self.request.user

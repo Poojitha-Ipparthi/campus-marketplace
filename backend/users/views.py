@@ -10,7 +10,13 @@ from rest_framework.views import APIView
 from .models import EmailVerification
 from .serializers import RegisterSerializer, UserSerializer
 
+class IsVerified(permissions.BasePermission):
+    message = "Please verify your email before accessing this feature."
 
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and request.user.verified)
+    
+    
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]

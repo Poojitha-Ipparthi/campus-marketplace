@@ -9,6 +9,7 @@ from rest_framework import generics, permissions, filters
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from users.views import IsVerified
 
 
 class CategoryListView(generics.ListAPIView):
@@ -45,7 +46,7 @@ class ListingListCreateView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsVerified()]
         return [permissions.AllowAny()]
 
     def perform_create(self, serializer):
@@ -86,6 +87,13 @@ def upload_listing_image(request, pk):
     if image_file.content_type not in allowed_types:
         return Response(
             {"detail": "Only JPEG, PNG, and WebP images are allowed."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 5MB file size limit
+    if image_file.size > 5 * 1024 * 1024:
+        return Response(
+            {"detail": "Image size must be under 5MB."},
             status=status.HTTP_400_BAD_REQUEST
         )
 

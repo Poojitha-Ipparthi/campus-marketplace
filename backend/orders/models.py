@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from listings.models import Listing
+from django.utils import timezone
 
 
 class Order(models.Model):
@@ -57,6 +58,7 @@ class Order(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    reserved_until = models.DateTimeField(null=True, blank=True)
 
     def clean(self):
         errors = {}
@@ -137,7 +139,8 @@ class Order(models.Model):
         self.status = self.Status.CANCELLED
         self.cancelled_by = self.CancelledBy.PAYMENT
         self.cancellation_reason = self.CancellationReason.PAYMENT_FAILED
-        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
+        self.reserved_until = None
+        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "reserved_until", "updated_at"])
 
     def cancel_due_to_expiration(self):
         if self.status != self.Status.ACCEPTED:
@@ -146,7 +149,8 @@ class Order(models.Model):
         self.status = self.Status.CANCELLED
         self.cancelled_by = self.CancelledBy.SYSTEM
         self.cancellation_reason = self.CancellationReason.RESERVATION_EXPIRED
-        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
+        self.reserved_until = None
+        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "reserved_until", "updated_at"])
 
     def save(self, *args, **kwargs):
         self.full_clean()
