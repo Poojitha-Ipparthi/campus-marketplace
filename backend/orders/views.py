@@ -112,6 +112,14 @@ def accept_order(request, pk):
 
     try:
         with transaction.atomic():
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
+
+            if order.status != Order.Status.PENDING:
+                return Response(
+                    {"detail": "Only pending orders can be accepted."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             order.status = Order.Status.ACCEPTED
             order.save(update_fields=["status", "updated_at"])
 
@@ -122,7 +130,6 @@ def accept_order(request, pk):
 
     except ValidationError as e:
         return Response({"detail": e.messages}, status=status.HTTP_400_BAD_REQUEST)
-
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
