@@ -34,11 +34,14 @@ export default function Login() {
 
             navigate("/listings");
         } catch (err) {
-            const message =
-                err.response?.data?.error?.message ||
-                err.response?.data?.detail ||
-                err.message ||
-                "Login failed.";
+            const data = err.response?.data;
+            const message = data?.error?.message || data?.detail || err.message || "Login failed.";
+            
+            if (message.toLowerCase().includes("verify")) {
+                navigate("/verify", { state: { email } });
+                return;
+            }
+            
             setError(message);
         } finally {
             setLoading(false);

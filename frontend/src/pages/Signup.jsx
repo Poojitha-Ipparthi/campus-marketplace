@@ -27,10 +27,21 @@ export default function Signup() {
             sessionStorage.setItem("pendingSignupPassword", password);
             navigate("/verify", { state: { email } });
         } catch (err) {
-            const message =
-                err.response?.data?.error?.message ||
-                err.response?.data?.detail ||
-                "Signup failed.";
+               const data = err.response?.data;
+            let message = "Signup failed.";
+            if (data) {
+                if (data.error?.fields) {
+                    const fields = data.error.fields;
+                    const fieldErrors = [];
+                    if (fields.email) fieldErrors.push(`Email: ${fields.email.join(", ")}`);
+                    if (fields.password) fieldErrors.push(`Password: ${fields.password.join(", ")}`);
+                    message = fieldErrors.join("\n");
+                } else if (data.error?.message) {
+                    message = data.error.message;
+                } else if (data.detail) {
+                    message = data.detail;
+                }
+            }
             setError(message);
         } finally {
             setLoading(false);
@@ -50,7 +61,7 @@ export default function Signup() {
                 <h2>Create your account</h2>
                 <p className="auth-subtitle">Use your campus email to get started.</p>
 
-                {error && <p className="error">{error}</p>}
+                {error && <p className="error" style={{whiteSpace: "pre-line"}}>{error}</p>}
 
                 <form onSubmit={handleSubmit}>
                     <label className="label">

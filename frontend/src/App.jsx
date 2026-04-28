@@ -10,6 +10,7 @@ import Signup from "./pages/Signup";
 import Verification from "./pages/Verification";
 import UserProfile from "./pages/UserProfile";
 import PublicProfile from "./pages/PublicProfile";
+import CreateListing from "./pages/CreateListing";
 
 export default function App() {
   return (
@@ -26,6 +27,8 @@ export default function App() {
 
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/users/:id" element={<PublicProfile />} />
+
+          <Route path="/create-listing" element={<CreateListing />} />
         </Routes>
       </Layout>
     </BrowserRouter>

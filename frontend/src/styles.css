@@ -537,3 +537,16 @@ img {
     padding: 24px;
   }
 }
+
+.form-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  padding: 32px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.form-title { color: #003b70; margin-bottom: 4px; }
+.form-subtitle { color: #555; margin-bottom: 24px; }
+.image-preview { margin: 12px 0; border-radius: 8px; overflow: hidden; max-height: 200px; }
+.image-preview img { width: 100%; object-fit: cover; }
