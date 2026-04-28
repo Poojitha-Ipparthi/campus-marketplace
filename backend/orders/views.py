@@ -24,12 +24,21 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
+        role = self.request.query_params.get("role", "buyer")
+
+        if role == "seller":
+            # Orders placed on the current user's listings
+            return Order.objects.filter(
+                listing__seller=user
+            ).select_related("listing", "buyer").order_by("-created_at")
+
+        # Default: orders placed by this user as buyer
         return Order.objects.filter(buyer=user).order_by("-created_at")
 
     def perform_create(self, serializer):
         from listings.models import Listing
         listing = serializer.validated_data.get('listing')
-        
+
         # Check if reservation has expired and release it
         if listing and listing.status == Listing.Status.RESERVED:
             expired_order = Order.objects.filter(
@@ -37,12 +46,12 @@ class OrderListCreateView(generics.ListCreateAPIView):
                 status=Order.Status.ACCEPTED,
                 reserved_until__lt=timezone.now()
             ).first()
-            
+
             if expired_order:
                 expired_order.cancel_due_to_expiration()
                 listing.status = Listing.Status.AVAILABLE
                 listing.save(update_fields=["status"])
-        
+
         serializer.save(buyer=self.request.user)
 
 

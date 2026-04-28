@@ -22,11 +22,14 @@ export default function Checkout() {
     setPaying(true);
     setError("");
     try {
-      await api.post("/api/payments/create-intent/", { order: parseInt(orderId) });
+      await api.post("/api/orders/payments/create-intent/", { order: parseInt(orderId) });
       setSuccess(true);
       setTimeout(() => navigate(`/orders/${orderId}`), 2000);
     } catch (err) {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || "Payment failed.";
+      const msg =
+        err.response?.data?.error?.message ||
+        err.response?.data?.detail ||
+        "Payment failed.";
       setError(msg);
     } finally {
       setPaying(false);
