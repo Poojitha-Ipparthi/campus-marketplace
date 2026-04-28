@@ -79,6 +79,7 @@ export default function ListingDetail() {
   const isOwner = currentUserId && listing.seller === currentUserId;
   const isAvailable = listing.status === "AVAILABLE";
   const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
+  const isFree = Number(listing.price) === 0;
 
   return (
     <main className="container detail-page">
@@ -95,7 +96,7 @@ export default function ListingDetail() {
           <h1>{listing.title}</h1>
 
           <p className="price large-price">
-            {Number(listing.price) === 0 ? "Free" : `$${Number(listing.price).toFixed(2)}`}
+            {isFree ? "Free" : `$${Number(listing.price).toFixed(2)}`}
           </p>
 
           <p><strong>Condition:</strong> {listing.condition}</p>
@@ -121,7 +122,6 @@ export default function ListingDetail() {
 
           {orderError && <p className="error">{orderError}</p>}
 
-          {/* Button row — flex with consistent alignment */}
           <div style={{
             display: "flex",
             gap: "12px",
@@ -129,8 +129,7 @@ export default function ListingDetail() {
             flexWrap: "wrap",
             alignItems: "center",
           }}>
-
-            {/* OWNER view: manage their own listing */}
+            {/* OWNER: manage listing */}
             {isOwner && (
               <>
                 <Link
@@ -150,7 +149,7 @@ export default function ListingDetail() {
               </>
             )}
 
-            {/* BUYER view: buy and message */}
+            {/* BUYER: buy/claim and message */}
             {!isOwner && isAvailable && isLoggedIn && (
               <button
                 className="auth-button"
@@ -158,7 +157,9 @@ export default function ListingDetail() {
                 disabled={ordering}
                 style={{ minWidth: "120px" }}
               >
-                {ordering ? "Placing Order..." : "Buy Now"}
+                {ordering
+                  ? (isFree ? "Claiming..." : "Placing Order...")
+                  : (isFree ? "Claim Item" : "Buy Now")}
               </button>
             )}
 
@@ -172,7 +173,6 @@ export default function ListingDetail() {
               </Link>
             )}
 
-            {/* Only show View Seller Profile to non-owners */}
             {!isOwner && (
               <Link
                 className="btn-secondary"

@@ -66,6 +66,8 @@ export default function NavBar() {
           <>
             <NavLink to="/login" className="nav-link">Login</NavLink>
             <NavLink to="/signup" className="nav-link">Sign Up</NavLink>
+            {localStorage.getItem("isStaff") === "true" && (
+              <NavLink to="/admin" className="nav-link">Admin</NavLink>)}
           </>
         )}
       </nav>

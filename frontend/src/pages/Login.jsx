@@ -36,12 +36,12 @@ export default function Login() {
         } catch (err) {
             const data = err.response?.data;
             const message = data?.error?.message || data?.detail || err.message || "Login failed.";
-            
+
             if (message.toLowerCase().includes("verify")) {
                 navigate("/verify", { state: { email } });
                 return;
             }
-            
+
             setError(message);
         } finally {
             setLoading(false);
@@ -88,6 +88,9 @@ export default function Login() {
                             required
                         />
                     </label>
+                    <Link to="/forgot-password" className="forgot-link">
+                        Forgot password?
+                    </Link>
 
                     <button className="auth-button" type="submit" disabled={loading}>
                         {loading ? "Logging in..." : "Log In"}

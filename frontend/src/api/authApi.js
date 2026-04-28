@@ -20,3 +20,15 @@ export function logoutUser() {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
 }
+
+export function requestPasswordReset(data) {
+  return api.post("/api/auth/password-reset/request/", data);
+}
+
+export function confirmPasswordReset(data) {
+  return api.post("/api/auth/password-reset/confirm/", data);
+}
+
+export function verifyPasswordResetCode(data) {
+  return api.post("/api/auth/password-reset/verify-code/", data);
+}

@@ -17,6 +17,8 @@ import Checkout from "./pages/Checkout";
 import Messages from "./pages/Messages";
 import Report from "./pages/Report";
 import LeaveReview from "./pages/LeaveReview";
+import ForgotPassword from "./pages/ForgotPassword";
+import AdminDashboard from "./pages/AdminDashboard";
 
 
 export default function App() {
@@ -41,6 +43,8 @@ export default function App() {
           <Route path="/messages" element={<Messages />} />
           <Route path="/report" element={<Report />} />
           <Route path="/reviews/create/:orderId" element={<LeaveReview />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
       </Layout>
     </BrowserRouter>
