@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 
 const BUYER_INFO = {
@@ -20,6 +20,8 @@ const SELLER_INFO = {
 
 export default function OrderDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const justPaid = searchParams.get("paid") === "true";
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -197,7 +199,14 @@ export default function OrderDetail() {
                 </button>
               </>
             )}
-            {order.status === "ACCEPTED" && (
+            {order.status === "ACCEPTED" && justPaid && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "10px", padding: "16px", textAlign: "center" }}>
+                <p style={{ fontSize: "28px", margin: 0 }}>✅</p>
+                <p style={{ color: "#15803d", fontWeight: "700", margin: "8px 0 4px" }}>Payment received!</p>
+                <p style={{ color: "#555", fontSize: "13px", margin: 0 }}>Your order is being confirmed. Refresh in a moment.</p>
+              </div>
+            )}
+            {order.status === "ACCEPTED" && !justPaid && (
               <>
                 <Link to={`/checkout/${order.id}`} className="auth-button" style={{ display: "block", textAlign: "center", textDecoration: "none", fontSize: "16px" }}>
                   💳 Pay Now — ${parseFloat(order.offered_price).toFixed(2)}
@@ -244,7 +253,14 @@ export default function OrderDetail() {
                 </button>
               </div>
             )}
-            {order.status === "ACCEPTED" && (
+            {order.status === "ACCEPTED" && justPaid && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "10px", padding: "16px", textAlign: "center" }}>
+                <p style={{ fontSize: "28px", margin: 0 }}>✅</p>
+                <p style={{ color: "#15803d", fontWeight: "700", margin: "8px 0 4px" }}>Payment received!</p>
+                <p style={{ color: "#555", fontSize: "13px", margin: 0 }}>Your order is being confirmed. Refresh in a moment.</p>
+              </div>
+            )}
+            {order.status === "ACCEPTED" && !justPaid && (
               <>
                 <p style={{ color: "#2563eb", fontSize: "14px", textAlign: "center", margin: 0 }}>
                   ⏳ Waiting for the buyer to complete payment.
