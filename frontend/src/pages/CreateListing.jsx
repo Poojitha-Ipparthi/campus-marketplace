@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
 import { getCategories } from "../api/listingsApi";
 
@@ -41,8 +41,6 @@ export default function CreateListing() {
     setError("");
 
     try {
-      // FIX: use string representation to avoid floating point issues
-      // parseFloat("300").toFixed(2) = "300.00" → no rounding errors
       const priceValue = parseFloat(price);
       if (isNaN(priceValue) || priceValue < 0) {
         setError("Please enter a valid price.");
@@ -53,7 +51,7 @@ export default function CreateListing() {
       const payload = {
         title,
         description,
-        price: priceValue.toFixed(2),   // "300.00" not 299.98
+        price: priceValue.toFixed(2),
         condition,
       };
       if (categoryId) payload.category_id = parseInt(categoryId);
@@ -72,10 +70,7 @@ export default function CreateListing() {
       navigate(`/listings/${listingId}`);
     } catch (err) {
       const data = err.response?.data;
-      const msg =
-        data?.error?.message ||
-        data?.detail ||
-        "Failed to create listing. Please try again.";
+      const msg = data?.error?.message || data?.detail || "Failed to create listing.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -84,7 +79,10 @@ export default function CreateListing() {
 
   return (
     <div className="container">
-      <div className="form-card">
+      {/* Back link */}
+      <Link to="/listings" className="back-link">← Back to Listings</Link>
+
+      <div className="form-card" style={{ marginTop: "12px" }}>
         <h1 className="form-title">Create a Listing</h1>
         <p className="form-subtitle">List an item for your campus community</p>
 
@@ -93,49 +91,25 @@ export default function CreateListing() {
         <form onSubmit={handleSubmit}>
           <label className="label">
             Title
-            <input
-              className="input full-input"
-              type="text"
-              value={title}
-              placeholder="What are you selling?"
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+            <input className="input full-input" type="text" value={title}
+              placeholder="What are you selling?" onChange={(e) => setTitle(e.target.value)} required />
           </label>
 
           <label className="label">
             Description
-            <textarea
-              className="input full-input"
-              value={description}
-              placeholder="Describe your item..."
-              onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              required
-            />
+            <textarea className="input full-input" value={description}
+              placeholder="Describe your item..." onChange={(e) => setDescription(e.target.value)} rows={4} required />
           </label>
 
           <label className="label">
             Price ($)
-            <input
-              className="input full-input"
-              type="number"
-              value={price}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              onChange={(e) => setPrice(e.target.value)}
-              required
-            />
+            <input className="input full-input" type="number" value={price}
+              placeholder="0.00" min="0" step="0.01" onChange={(e) => setPrice(e.target.value)} required />
           </label>
 
           <label className="label">
             Condition
-            <select
-              className="input full-input"
-              value={condition}
-              onChange={(e) => setCondition(e.target.value)}
-            >
+            <select className="input full-input" value={condition} onChange={(e) => setCondition(e.target.value)}>
               <option value="NEW">New</option>
               <option value="USED">Used</option>
             </select>
@@ -143,28 +117,17 @@ export default function CreateListing() {
 
           <label className="label">
             Category (optional)
-            <select
-              className="input full-input"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
+            <select className="input full-input" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               <option value="">Select a category</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </label>
 
           <label className="label">
             Image (optional)
-            <input
-              className="input full-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleImageChange}
-            />
+            <input className="input full-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} />
           </label>
 
           {imagePreview && (
@@ -173,12 +136,7 @@ export default function CreateListing() {
             </div>
           )}
 
-          <button
-            className="auth-button"
-            type="submit"
-            disabled={loading}
-            style={{ marginTop: "16px" }}
-          >
+          <button className="auth-button" type="submit" disabled={loading} style={{ marginTop: "16px" }}>
             {loading ? "Creating..." : "Create Listing"}
           </button>
         </form>
