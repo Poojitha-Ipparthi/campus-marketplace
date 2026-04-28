@@ -20,7 +20,7 @@ export default function ListingDetail() {
         // Get current user id
         api.get("/api/auth/me/")
             .then((res) => setCurrentUserId(res.data.id))
-            .catch(() => {});
+            .catch(() => { });
     }, [id]);
 
     async function loadListing() {
@@ -126,7 +126,13 @@ export default function ListingDetail() {
                     <div style={{ display: "flex", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
                         {!isOwner && isAvailable && isLoggedIn && (
                             <button className="auth-button" onClick={handlePlaceOrder} disabled={ordering}>
-                                {ordering ? "Placing Order..." : "Buy Now"}
+                                {ordering
+                                    ? Number(listing.price) === 0
+                                        ? "Claiming..."
+                                        : "Placing Order..."
+                                    : Number(listing.price) === 0
+                                        ? "Claim Item"
+                                        : "Buy Now"}
                             </button>
                         )}
 

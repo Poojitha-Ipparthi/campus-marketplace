@@ -7,6 +7,16 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetVerifyCodeView,
     PasswordResetConfirmView,
+    AdminStatsView,
+    AdminUserListView,
+    AdminUserDetailView,
+    AdminUserDeactivateView,
+    AdminListingListView,
+    AdminListingDetailView,
+    AdminListingDeleteView,
+    AdminOrderListView,
+    AdminOrderDetailView,
+    AdminPaymentListView,
 )
 
 urlpatterns = [
@@ -21,4 +31,14 @@ urlpatterns = [
     path("password-reset/request/", PasswordResetRequestView.as_view()),
     path("password-reset/confirm/", PasswordResetConfirmView.as_view()),
     path("password-reset/verify-code/", PasswordResetVerifyCodeView.as_view()),
+    path("admin/stats/", AdminStatsView.as_view()),
+    path("admin/users/", AdminUserListView.as_view()),
+    path("admin/users/<int:pk>/", AdminUserDetailView.as_view()),
+    path("admin/users/<int:pk>/deactivate/", AdminUserDeactivateView.as_view()),
+    path("admin/listings/", AdminListingListView.as_view()),
+    path("admin/listings/<int:pk>/", AdminListingDetailView.as_view()),
+    path("admin/listings/<int:pk>/delete/", AdminListingDeleteView.as_view()),
+    path("admin/orders/", AdminOrderListView.as_view()),
+    path("admin/orders/<int:pk>/", AdminOrderDetailView.as_view()),
+    path("admin/payments/", AdminPaymentListView.as_view()),
 ]

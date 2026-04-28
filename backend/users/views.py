@@ -16,6 +16,14 @@ from .serializers import (
     PasswordResetVerifyCodeSerializer,
     PasswordResetConfirmSerializer,
 )
+from listings.models import Listing
+from orders.models import Order
+from .admin_serializers import (
+    AdminUserSerializer,
+    AdminListingSerializer,
+    AdminOrderSerializer,
+    AdminPaymentSerializer,
+)
 
 
 class IsVerified(permissions.BasePermission):
@@ -247,3 +255,167 @@ class PasswordResetConfirmView(APIView):
         verification.save(update_fields=["is_used"])
 
         return Response({"detail": "Password reset successfully."})
+
+
+class IsAdminUserOnly(permissions.BasePermission):
+    message = "Admin access required."
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated and request.user.is_staff
+        )
+
+
+class AdminStatsView(APIView):
+    permission_classes = [IsAdminUserOnly]
+
+    def get(self, request):
+        try:
+            payment_count = Payment.objects.count()
+        except Exception:
+            payment_count = 0
+
+        data = {
+            "total_users": User.objects.count(),
+            "active_users": User.objects.filter(is_active=True).count(),
+            "verified_users": User.objects.filter(verified=True).count(),
+            "total_listings": Listing.objects.count(),
+            "available_listings": Listing.objects.filter(
+                status=Listing.Status.AVAILABLE
+            ).count(),
+            "sold_listings": Listing.objects.filter(status=Listing.Status.SOLD).count(),
+            "reserved_listings": Listing.objects.filter(
+                status=Listing.Status.RESERVED
+            ).count(),
+            "total_orders": Order.objects.count(),
+            "pending_orders": Order.objects.filter(status=Order.Status.PENDING).count(),
+            "completed_orders": Order.objects.filter(
+                status=Order.Status.COMPLETED
+            ).count(),
+            "total_payments": payment_count,
+        }
+
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class AdminUserListView(generics.ListAPIView):
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdminUserOnly]
+
+    def get_queryset(self):
+        return User.objects.all().order_by("-created_at")
+
+
+class AdminUserDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdminUserOnly]
+    queryset = User.objects.all()
+
+    def patch(self, request, *args, **kwargs):
+        user = self.get_object()
+
+        allowed_fields = ["full_name", "verified", "is_active", "is_staff"]
+
+        for field in allowed_fields:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+
+        user.save(update_fields=allowed_fields)
+
+        return Response(AdminUserSerializer(user).data)
+
+
+class AdminUserDeactivateView(APIView):
+    permission_classes = [IsAdminUserOnly]
+
+    def post(self, request, pk):
+        user = User.objects.filter(pk=pk).first()
+
+        if not user:
+            return Response({"detail": "User not found."}, status=404)
+
+        if user == request.user:
+            return Response(
+                {"detail": "You cannot deactivate your own admin account."},
+                status=400,
+            )
+
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        return Response({"detail": "User deactivated successfully."})
+
+
+class AdminListingListView(generics.ListAPIView):
+    serializer_class = AdminListingSerializer
+    permission_classes = [IsAdminUserOnly]
+
+    def get_queryset(self):
+        return Listing.objects.select_related("seller").order_by("-created_at")
+
+
+class AdminListingDetailView(generics.RetrieveUpdateAPIView):
+    serializer_class = AdminListingSerializer
+    permission_classes = [IsAdminUserOnly]
+    queryset = Listing.objects.select_related("seller").all()
+
+    def patch(self, request, *args, **kwargs):
+        listing = self.get_object()
+
+        allowed_fields = ["title", "price", "status", "condition"]
+
+        for field in allowed_fields:
+            if field in request.data:
+                setattr(listing, field, request.data[field])
+
+        listing.save(update_fields=allowed_fields)
+
+        return Response(AdminListingSerializer(listing).data)
+
+
+class AdminListingDeleteView(APIView):
+    permission_classes = [IsAdminUserOnly]
+
+    def delete(self, request, pk):
+        listing = Listing.objects.filter(pk=pk).first()
+
+        if not listing:
+            return Response({"detail": "Listing not found."}, status=404)
+
+        listing.delete()
+
+        return Response({"detail": "Listing removed successfully."})
+
+
+class AdminOrderListView(generics.ListAPIView):
+    serializer_class = AdminOrderSerializer
+    permission_classes = [IsAdminUserOnly]
+
+    def get_queryset(self):
+        return Order.objects.select_related(
+            "buyer", "listing", "listing__seller"
+        ).order_by("-created_at")
+
+
+class AdminOrderDetailView(generics.RetrieveAPIView):
+    serializer_class = AdminOrderSerializer
+    permission_classes = [IsAdminUserOnly]
+    queryset = Order.objects.select_related("buyer", "listing", "listing__seller").all()
+
+
+class AdminPaymentListView(APIView):
+    permission_classes = [IsAdminUserOnly]
+
+    def get(self, request):
+        try:
+            payments = Payment.objects.select_related("order").order_by("-created_at")
+            serializer = AdminPaymentSerializer(payments, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {
+                    "detail": "Payments could not be loaded.",
+                    "error": str(e),
+                },
+                status=status.HTTP_200_OK,
+            )
