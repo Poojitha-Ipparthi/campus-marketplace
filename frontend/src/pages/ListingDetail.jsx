@@ -84,7 +84,7 @@ export default function ListingDetail() {
 
     return (
         <main className="container detail-page">
-            <Link className="text-link detail-back-link" to="/listings">
+            <Link className="back-link" to="/listings">
                 ← Back to listings
             </Link>
 
@@ -125,35 +125,18 @@ export default function ListingDetail() {
 
                     <div style={{ display: "flex", gap: "12px", marginTop: "16px", flexWrap: "wrap" }}>
                         {!isOwner && isAvailable && isLoggedIn && (
-                            <button
-                                className="auth-button"
-                                onClick={handlePlaceOrder}
-                                disabled={ordering}
-                            >
+                            <button className="auth-button" onClick={handlePlaceOrder} disabled={ordering}>
                                 {ordering ? "Placing Order..." : "Buy Now"}
                             </button>
                         )}
 
                         {!isOwner && isLoggedIn && (
-                            <Link
-                                to={`/messages?listing=${id}&receiver=${listing.seller}`}
-                                className="btn-secondary"
-                            >
+                            <Link to={`/messages?listing=${id}&receiver=${listing.seller}`} className="btn-secondary">
                                 Message Seller
                             </Link>
                         )}
 
-                        {isOwner && (
-                            <Link
-                                to={`/report?listing=${id}`}
-                                className="btn-secondary"
-                                style={{ fontSize: "13px", color: "#999", textDecoration: "underline"}}
-                            >
-                                Report Listing
-                            </Link>
-                        )}
-
-                        <Link className="button-link" to={`/users/${listing.seller}`}>
+                        <Link className="button-link" to={`/users/${listing.seller}`} state={{ fromListingId: listing.id }}>
                             View Seller Profile
                         </Link>
                     </div>

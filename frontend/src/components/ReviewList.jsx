@@ -1,27 +1,35 @@
 export default function ReviewList({ reviews = [] }) {
   if (!reviews.length) {
-    return <p>No reviews yet.</p>;
+    return (
+      <section className="reviews-section">
+        <h2>Reviews</h2>
+        <p className="empty-state">No reviews yet.</p>
+      </section>
+    );
   }
 
   return (
-    <section>
+    <section className="reviews-section">
       <h2>Reviews</h2>
 
-      <div className="order-list">
+      <div className="reviews-list">
         {reviews.map((review) => (
-          <div key={review.id} className="card">
-            <h3 className="title">Rating: {review.rating}/5</h3>
+          <article key={review.id} className="review-card">
+            <h3>Rating: {review.rating}/5</h3>
             <p>{review.comment || "No comment provided."}</p>
+
             <p className="seller">
-              Reviewer: {review.reviewer_email || review.reviewer}
+              <strong>Reviewer:</strong>{" "}
+              {review.reviewer_email || review.reviewer}
             </p>
+
             <p className="seller">
-              Date:{" "}
+              <strong>Date:</strong>{" "}
               {review.created_at
                 ? new Date(review.created_at).toLocaleDateString()
                 : "Unknown"}
             </p>
-          </div>
+          </article>
         ))}
       </div>
     </section>

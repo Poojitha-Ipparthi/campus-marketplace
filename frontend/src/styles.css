@@ -159,13 +159,68 @@ img {
   margin-bottom: 30px;
 }
 
+<<<<<<< HEAD
 .filter-row {
+=======
+/* =========================================================
+   LISTING DETAIL
+========================================================= */
+.detail-page {
+  max-width: 900px;
+}
+
+
+.marketplace-detail-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.marketplace-detail-image {
+  height: 420px;
+  background: #fff8e6;
+>>>>>>> fbf6b0d97574c6c534ce14c52630b078246c51b1
   display: flex;
   gap: 12px;
   margin-top: 12px;
   flex-wrap: wrap;
 }
 
+<<<<<<< HEAD
+=======
+.marketplace-detail-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marketplace-detail-info {
+  padding: 28px;
+}
+
+.marketplace-detail-info h1 {
+  margin: 0 0 10px;
+  color: #003b70;
+  font-weight: 700;
+  /* make it bold */
+  font-size: 24px;
+  /* match card title size */
+}
+
+.marketplace-detail-info p {
+  margin: 12px 0;
+  font-size: 16px;
+}
+
+.marketplace-detail-info .button-link {
+  margin-top: 20px;
+}
+
+/* =========================================================
+   FORMS (Filters + Auth + General)
+========================================================= */
+>>>>>>> fbf6b0d97574c6c534ce14c52630b078246c51b1
 .label {
   display: block;
   margin-top: 16px;
@@ -435,7 +490,162 @@ img {
   font-weight: bold;
 }
 
+<<<<<<< HEAD
 /* ===== Status Badges ===== */
+=======
+/* =========================================================
+   PROFILE PAGE
+========================================================= */
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.profile-card {
+  background: white;
+  padding: 24px;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Public seller profile page */
+.seller-profile-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.seller-photo-circle {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: #eef4fa;
+  border: 3px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  overflow: hidden;
+}
+
+.seller-photo-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #003b70;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.seller-profile-info {
+  display: grid;
+  gap: 8px;
+  justify-content: center;
+  text-align: left;
+}
+
+.profile-header {
+  font-weight: 700;
+  font-size: 18px;
+  color: #003b70;
+  margin-bottom: 20px;
+}
+
+.back-link {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 18px;
+  color: #003b70;
+  margin-bottom: 16px;
+  text-decoration: none;
+}
+
+
+/* Seller stats section — title outside, content below */
+.profile-stats-section {
+  margin-bottom: 24px;
+}
+
+.profile-stats-section h2,
+.profile-listings-section h2,
+.review-section h2 {
+  color: #003b70;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.profile-stats-content {
+  padding-left: 4px;
+}
+
+.profile-stats-content p {
+  margin: 4px 0;
+}
+
+/* Listings section */
+.profile-listings-section {
+  margin-bottom: 24px;
+}
+
+.profile-listings-section .grid {
+  margin-top: 0;
+}
+
+/* Reviews section */
+.review-section {
+  margin-top: 28px;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  padding: 20px 24px;
+  width: fit-content;
+  min-width: 320px;
+  max-width: 620px;
+}
+
+.review-card h3 {
+  color: #003b70;
+  margin: 0 0 8px;
+}
+
+/* =========================================================
+   DETAIL PAGE
+========================================================= */
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.detail-image {
+  height: 300px;
+  background: #fff8e6;
+  border-radius: 12px;
+}
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+>>>>>>> fbf6b0d97574c6c534ce14c52630b078246c51b1
 .status-badge {
   display: inline-block;
   padding: 4px 8px;
