@@ -12,16 +12,13 @@ User = get_user_model()
 class ReportingAPITests(APITestCase):
     def setUp(self):
         self.user1 = User.objects.create_user(
-            email="user1@test.com",
-            password="pass12345"
+            email="user1@test.com", password="pass12345"
         )
         self.user2 = User.objects.create_user(
-            email="user2@test.com",
-            password="pass12345"
+            email="user2@test.com", password="pass12345"
         )
         self.user3 = User.objects.create_user(
-            email="user3@test.com",
-            password="pass12345"
+            email="user3@test.com", password="pass12345"
         )
 
         self.category = Category.objects.create(name="Electronics")
@@ -39,7 +36,7 @@ class ReportingAPITests(APITestCase):
             sender=self.user2,
             receiver=self.user1,
             listing=self.listing,
-            content="Is this still available?"
+            content="Is this still available?",
         )
 
         self.blocks_url = "/api/reporting/blocks/"
@@ -119,10 +116,7 @@ class ReportingAPITests(APITestCase):
     def test_user_can_report_another_user(self):
         self.authenticate(self.user1)
 
-        payload = {
-            "reported_user": self.user2.id,
-            "reason": "Spam"
-        }
+        payload = {"reported_user": self.user2.id, "reason": "Spam"}
 
         response = self.client.post(self.reports_url, payload, format="json")
 
@@ -136,10 +130,7 @@ class ReportingAPITests(APITestCase):
     def test_user_can_report_listing(self):
         self.authenticate(self.user1)
 
-        payload = {
-            "reported_listing": self.listing.id,
-            "reason": "Inappropriate item"
-        }
+        payload = {"reported_listing": self.listing.id, "reason": "Inappropriate item"}
 
         response = self.client.post(self.reports_url, payload, format="json")
 
@@ -152,10 +143,7 @@ class ReportingAPITests(APITestCase):
     def test_user_can_report_message(self):
         self.authenticate(self.user1)
 
-        payload = {
-            "reported_message": self.message.id,
-            "reason": "Harassment"
-        }
+        payload = {"reported_message": self.message.id, "reason": "Harassment"}
 
         response = self.client.post(self.reports_url, payload, format="json")
 
@@ -168,9 +156,7 @@ class ReportingAPITests(APITestCase):
     def test_report_without_target_is_rejected(self):
         self.authenticate(self.user1)
 
-        payload = {
-            "reason": "No target provided"
-        }
+        payload = {"reason": "No target provided"}
 
         response = self.client.post(self.reports_url, payload, format="json")
 
@@ -179,14 +165,10 @@ class ReportingAPITests(APITestCase):
 
     def test_report_list_shows_only_current_users_reports(self):
         Report.objects.create(
-            reporter=self.user1,
-            reported_user=self.user2,
-            reason="Spam"
+            reporter=self.user1, reported_user=self.user2, reason="Spam"
         )
         Report.objects.create(
-            reporter=self.user2,
-            reported_user=self.user1,
-            reason="Abuse"
+            reporter=self.user2, reported_user=self.user1, reason="Abuse"
         )
 
         self.authenticate(self.user1)
@@ -198,14 +180,10 @@ class ReportingAPITests(APITestCase):
 
     def test_report_detail_shows_only_current_users_own_report(self):
         own_report = Report.objects.create(
-            reporter=self.user1,
-            reported_user=self.user2,
-            reason="Spam"
+            reporter=self.user1, reported_user=self.user2, reason="Spam"
         )
         other_report = Report.objects.create(
-            reporter=self.user2,
-            reported_user=self.user1,
-            reason="Abuse"
+            reporter=self.user2, reported_user=self.user1, reason="Abuse"
         )
 
         self.authenticate(self.user1)

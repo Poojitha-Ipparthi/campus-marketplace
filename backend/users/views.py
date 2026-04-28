@@ -39,8 +39,7 @@ class SendVerificationCodeView(APIView):
 
         if not email:
             return Response(
-                {"detail": "Email is required."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         user = User.objects.filter(email=email).first()
@@ -48,13 +47,13 @@ class SendVerificationCodeView(APIView):
         if not user:
             return Response(
                 {"detail": "No account found with this email."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         if user.verified:
             return Response(
                 {"detail": "This email is already verified."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         
         # Invalidate any existing unused codes first
@@ -63,18 +62,16 @@ class SendVerificationCodeView(APIView):
             is_used=False
         ).update(is_used=True)
 
-        code = ''.join(random.choices(string.digits, k=6))
+        code = "".join(random.choices(string.digits, k=6))
 
         EmailVerification.objects.create(
-            user=user,
-            code=code,
-            expires_at=timezone.now() + timedelta(minutes=10)
+            user=user, code=code, expires_at=timezone.now() + timedelta(minutes=10)
         )
 
         try:
             send_mail(
-                subject='Your Campus Marketplace Verification Code',
-                message=f'Your verification code is: {code}\n\nThis code expires in 10 minutes.',
+                subject="Your Campus Marketplace Verification Code",
+                message=f"Your verification code is: {code}\n\nThis code expires in 10 minutes.",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
                 fail_silently=False,
@@ -82,12 +79,12 @@ class SendVerificationCodeView(APIView):
         except Exception:
             return Response(
                 {"detail": "Failed to send verification email. Please try again."},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         return Response(
             {"detail": "Verification code sent to your email."},
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -101,7 +98,7 @@ class VerifyCodeView(APIView):
         if not email or not code:
             return Response(
                 {"detail": "Email and verification code are required."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = User.objects.filter(email=email).first()
@@ -109,25 +106,25 @@ class VerifyCodeView(APIView):
         if not user:
             return Response(
                 {"detail": "No account found with this email."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        verification = EmailVerification.objects.filter(
-            user=user,
-            code=code,
-            is_used=False
-        ).order_by('-created_at').first()
+        verification = (
+            EmailVerification.objects.filter(user=user, code=code, is_used=False)
+            .order_by("-created_at")
+            .first()
+        )
 
         if not verification:
             return Response(
                 {"detail": "Invalid verification code."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if verification.is_expired():
             return Response(
                 {"detail": "Verification code expired."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         verification.is_used = True
@@ -137,9 +134,9 @@ class VerifyCodeView(APIView):
         user.save()
 
         return Response(
-            {"detail": "Email verified successfully."},
-            status=status.HTTP_200_OK
+            {"detail": "Email verified successfully."}, status=status.HTTP_200_OK
         )
-        
+
+
 class VerifiedTokenObtainPairView(TokenObtainPairView):
     serializer_class = VerifiedTokenObtainPairSerializer

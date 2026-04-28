@@ -16,6 +16,9 @@ class ListingImageSerializer(serializers.ModelSerializer):
 
 class ListingSerializer(serializers.ModelSerializer):
     seller_email = serializers.ReadOnlyField(source="seller.email")
+    seller_name = serializers.ReadOnlyField(source="seller.full_name")
+    seller_trust_score = serializers.ReadOnlyField(source="seller.trust_score")
+    seller_is_new_user = serializers.ReadOnlyField(source="seller.is_new_user")
     images = ListingImageSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -23,7 +26,7 @@ class ListingSerializer(serializers.ModelSerializer):
         source="category",
         write_only=True,
         required=False,
-        allow_null=True
+        allow_null=True,
     )
 
     class Meta:
@@ -32,6 +35,8 @@ class ListingSerializer(serializers.ModelSerializer):
             "id",
             "seller",
             "seller_email",
+            "seller_name",
+            "seller_trust_score",
             "category",
             "category_id",
             "title",
@@ -40,6 +45,7 @@ class ListingSerializer(serializers.ModelSerializer):
             "condition",
             "status",
             "images",
+            "seller_is_new_user",
             "created_at",
         ]
         read_only_fields = ["seller", "status", "created_at"]

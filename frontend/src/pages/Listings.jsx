@@ -5,100 +5,99 @@ import ListingCard from "../components/ListingCard";
 import SearchBar from "../components/SearchBar";
 
 export default function Listings() {
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
+    const [items, setItems] = useState([]);
+    const [categories, setCategories] = useState([]);
 
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
-  const [condition, setCondition] = useState("");
-  const [status, setStatus] = useState("AVAILABLE");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
+    const [search, setSearch] = useState("");
+    const [category, setCategory] = useState("");
+    const [condition, setCondition] = useState("");
+    const [status, setStatus] = useState("AVAILABLE");
+    const [minPrice, setMinPrice] = useState("");
+    const [maxPrice, setMaxPrice] = useState("");
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadCategories();
-    loadListings();
-  }, []);
+    useEffect(() => {
+        loadCategories();
+        loadListings();
+    }, []);
 
-  async function loadCategories() {
-    try {
-      const res = await getCategories();
-      setCategories(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      setCategories([]);
+    async function loadCategories() {
+        try {
+            const res = await getCategories();
+            setCategories(Array.isArray(res.data) ? res.data : []);
+        } catch {
+            setCategories([]);
+        }
     }
-  }
 
-  async function loadListings() {
-    try {
-      setLoading(true);
-      setError("");
+    async function loadListings(customParams = null) {
+        try {
+            setLoading(true);
+            setError("");
 
-      const params = {};
+            const params = customParams ?? {};
 
-      if (search) params.search = search;
-      if (category) params.category = category;
-      if (condition) params.condition = condition;
-      if (status) params.status = status;
-      if (minPrice) params.min_price = minPrice;
-      if (maxPrice) params.max_price = maxPrice;
+            if (!customParams) {
+                if (search) params.search = search;
+                if (category) params.category = category;
+                if (condition) params.condition = condition;
+                if (status) params.status = status;
+                if (minPrice) params.min_price = minPrice;
+                if (maxPrice) params.max_price = maxPrice;
+            }
 
-      const res = await getListings(params);
-      setItems(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      setError("Could not load listings.");
-    } finally {
-      setLoading(false);
+            const res = await getListings(params);
+            setItems(Array.isArray(res.data) ? res.data : []);
+        } catch {
+            setError("Could not load listings.");
+        } finally {
+            setLoading(false);
+        }
     }
-  }
 
-  function clearFilters() {
-    setSearch("");
-    setCategory("");
-    setCondition("");
-    setStatus("AVAILABLE");
-    setMinPrice("");
-    setMaxPrice("");
+    function clearFilters() {
+        setSearch("");
+        setCategory("");
+        setCondition("");
+        setStatus("");
+        setMinPrice("");
+        setMaxPrice("");
 
-    setTimeout(loadListings, 0);
-  }
+        loadListings({});
+    }
 
-  return (
-    <main className="container">
-      <h1>All Listings</h1>
+    return (
+        <main className="container">
 
-      {error && <p className="error">{error}</p>}
+            {error && <p className="error">{error}</p>}
 
-      <SearchBar value={search} onChange={setSearch} onSearch={loadListings} />
+            <SearchBar value={search} onChange={setSearch} onSearch={() => loadListings()} />
+            <CategoryFilter
+                categories={categories}
+                category={category}
+                condition={condition}
+                status={status}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                onCategoryChange={setCategory}
+                onConditionChange={setCondition}
+                onStatusChange={setStatus}
+                onMinPriceChange={setMinPrice}
+                onMaxPriceChange={setMaxPrice}
+                onApply={() => loadListings()} onClear={clearFilters}
+            />
 
-      <CategoryFilter
-        categories={categories}
-        category={category}
-        condition={condition}
-        status={status}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
-        onCategoryChange={setCategory}
-        onConditionChange={setCondition}
-        onStatusChange={setStatus}
-        onMinPriceChange={setMinPrice}
-        onMaxPriceChange={setMaxPrice}
-        onApply={loadListings}
-        onClear={clearFilters}
-      />
+            {loading && <p>Loading listings...</p>}
 
-      {loading && <p>Loading listings...</p>}
+            {!loading && items.length === 0 && <p>No listings found.</p>}
 
-      {!loading && items.length === 0 && <p>No listings found.</p>}
-
-      <div className="grid">
-        {items.map((item) => (
-          <ListingCard key={item.id} listing={item} />
-        ))}
-      </div>
-    </main>
-  );
+            <div className="grid">
+                {items.map((item) => (
+                    <ListingCard key={item.id} listing={item} />
+                ))}
+            </div>
+        </main>
+    );
 }

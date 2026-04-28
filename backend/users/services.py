@@ -3,7 +3,6 @@ from django.db.models import Avg, Count, Q
 
 from orders.models import Order
 from reviews.models import Review
-from reporting.models import Report
 
 
 def clamp_decimal(value: Decimal, minimum: Decimal, maximum: Decimal) -> Decimal:
@@ -19,53 +18,40 @@ def round_score(value: Decimal) -> Decimal:
 
 
 def recalculate_trust_score(user):
-    # 1. Average rating received
+    # 1. Average review rating received
     review_stats = Review.objects.filter(reviewee=user).aggregate(
         avg_rating=Avg("rating"),
         total_reviews=Count("id"),
     )
 
     avg_rating = review_stats["avg_rating"]
+    total_reviews = review_stats["total_reviews"] or 0
+
     if avg_rating is None:
-        avg_rating = Decimal("0.00")
+        review_score = Decimal("0.00")
     else:
-        avg_rating = Decimal(str(avg_rating))
+        review_score = Decimal(str(avg_rating))
 
-    # 2. User's orders involvement
-    # A user may be buyer or seller
-    order_qs = Order.objects.filter(
-        Q(buyer=user) | Q(listing__seller=user)
-    ).distinct()
+    # 2. Completed transactions as buyer or seller
+    completed_transactions = (
+        Order.objects.filter(
+            Q(buyer=user) | Q(listing__seller=user),
+            status=Order.Status.COMPLETED,
+        )
+        .distinct()
+        .count()
+    )
 
-    total_orders = order_qs.count()
-    completed_orders = order_qs.filter(status=Order.Status.COMPLETED).count()
-    cancelled_orders = order_qs.filter(status=Order.Status.CANCELLED).count()
+    # +0.10 per completed transaction, capped at +0.50
+    transaction_bonus = Decimal("0.10") * Decimal(completed_transactions)
+    transaction_bonus = min(transaction_bonus, Decimal("0.50"))
 
-    # Completion bonus: +0.10 per 5 completed orders, capped at +0.50
-    completion_steps = completed_orders // 5
-    completion_bonus = Decimal("0.10") * Decimal(completion_steps)
-    completion_bonus = min(completion_bonus, Decimal("0.50"))
-
-    # Cancellation penalty: cancellation_rate * 1.5, capped at 1.50
-    if total_orders > 0:
-        cancellation_rate = Decimal(cancelled_orders) / Decimal(total_orders)
-        cancellation_penalty = cancellation_rate * Decimal("1.50")
+    # If no reviews, score only reflects completed transaction bonus
+    if total_reviews == 0:
+        score = transaction_bonus
     else:
-        cancellation_penalty = Decimal("0.00")
+        score = review_score + transaction_bonus
 
-    cancellation_penalty = min(cancellation_penalty, Decimal("1.50"))
-
-    # 3. Report penalty
-    valid_report_count = Report.objects.filter(
-        reported_user=user,
-        status__in=[Report.Status.REVIEWED, Report.Status.RESOLVED],
-    ).count()
-
-    report_penalty = Decimal("0.20") * Decimal(valid_report_count)
-    report_penalty = min(report_penalty, Decimal("1.00"))
-
-    # Final score
-    score = avg_rating + completion_bonus - cancellation_penalty - report_penalty
     score = clamp_decimal(score, Decimal("0.00"), Decimal("5.00"))
     score = round_score(score)
 

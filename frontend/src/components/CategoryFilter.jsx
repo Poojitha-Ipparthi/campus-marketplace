@@ -77,7 +77,7 @@ export default function CategoryFilter({
           Apply
         </button>
 
-        <button className="secondary-button" type="button" onClick={onClear}>
+        <button className="button" type="button" onClick={onClear}>
           Clear
         </button>
       </div>

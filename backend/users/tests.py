@@ -9,6 +9,7 @@ from reporting.models import Report
 
 User = get_user_model()
 
+
 class TrustScoreTestCase(TestCase):
     def setUp(self):
         self.category = Category.objects.create(name="Electronics")
@@ -40,19 +41,20 @@ class TrustScoreTestCase(TestCase):
         return order
 
     def create_cancelled_order(self):
-       listing = self.create_listing()
-       order = Order.objects.create(
-           buyer=self.buyer,
-           listing=listing,
-           offered_price=100,
+        listing = self.create_listing()
+        order = Order.objects.create(
+            buyer=self.buyer,
+            listing=listing,
+            offered_price=100,
         )
-       order.cancel_by_buyer()
-       return order
-        
+        order.cancel_by_buyer()
+        return order
+
         # New user baseline
+
     def test_new_user_trust_score_is_zero(self):
         self.assertEqual(self.seller.trust_score, Decimal("0.00"))
-        
+
     # Review impact
     def test_review_updates_trust_score(self):
         order = self.create_completed_order()
@@ -67,7 +69,7 @@ class TrustScoreTestCase(TestCase):
 
         self.seller.refresh_from_db()
         self.assertEqual(self.seller.trust_score, Decimal("5.00"))
-        
+
     # Multiple reviews average
     def test_multiple_reviews_average(self):
         order1 = self.create_completed_order()
@@ -91,7 +93,7 @@ class TrustScoreTestCase(TestCase):
 
         self.seller.refresh_from_db()
         self.assertEqual(self.seller.trust_score, Decimal("3.00"))
-        
+
     # completion Bonus
     def test_completion_bonus_applied(self):
         # 5 completed orders → +0.10
@@ -112,7 +114,7 @@ class TrustScoreTestCase(TestCase):
 
         # 4.00 + 0.10 = 4.10
         self.assertEqual(self.seller.trust_score, Decimal("4.10"))
-        
+
     # Cancellation penalty
     def test_cancellation_penalty_applied(self):
         # 10 orders, 4 cancelled → rate = 0.4 → penalty = 0.6
@@ -135,7 +137,7 @@ class TrustScoreTestCase(TestCase):
 
         # Final score after completion bonus and cancellation penalty
         self.assertEqual(self.seller.trust_score, Decimal("4.55"))
-        
+
     # Report penalty
     def test_report_penalty_applied(self):
         order = self.create_completed_order()
@@ -159,7 +161,7 @@ class TrustScoreTestCase(TestCase):
 
         # 4.00 - 0.20 = 3.80
         self.assertEqual(self.seller.trust_score, Decimal("3.80"))
-        
+
     # Score clamped at 5.0
     def test_score_does_not_exceed_max(self):
         # Force large bonus
@@ -177,7 +179,7 @@ class TrustScoreTestCase(TestCase):
 
         self.seller.refresh_from_db()
         self.assertEqual(self.seller.trust_score, Decimal("5.00"))
-        
+
     # Score never goes below 0
     def test_score_never_negative(self):
         # No reviews → base 0
@@ -195,7 +197,7 @@ class TrustScoreTestCase(TestCase):
 
         self.seller.refresh_from_db()
         self.assertEqual(self.seller.trust_score, Decimal("0.00"))
-        
+
     # Delete review recalculates score
     def test_review_delete_updates_score(self):
         order = self.create_completed_order()

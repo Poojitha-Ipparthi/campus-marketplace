@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    
+
     class Meta:
         verbose_name = "Category"
         verbose_name_plural = "Categories"
@@ -26,29 +26,23 @@ class Listing(models.Model):
         USED = "USED", "Used"
 
     seller = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="listings"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="listings"
     )
     category = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,
         related_name="listings",
         null=True,
-        blank=True
+        blank=True,
     )
     title = models.CharField(max_length=255)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     condition = models.CharField(
-        max_length=20,
-        choices=Condition.choices,
-        default=Condition.USED
+        max_length=20, choices=Condition.choices, default=Condition.USED
     )
     status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.AVAILABLE
+        max_length=20, choices=Status.choices, default=Status.AVAILABLE
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -66,9 +60,7 @@ class Listing(models.Model):
 
 class ListingImage(models.Model):
     listing = models.ForeignKey(
-        Listing,
-        on_delete=models.CASCADE,
-        related_name="images"
+        Listing, on_delete=models.CASCADE, related_name="images"
     )
     image_url = models.URLField()
     uploaded_at = models.DateTimeField(auto_now_add=True)

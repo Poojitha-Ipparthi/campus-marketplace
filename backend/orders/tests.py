@@ -11,16 +11,13 @@ User = get_user_model()
 class OrderAPITests(APITestCase):
     def setUp(self):
         self.seller = User.objects.create_user(
-            email="seller@test.com",
-            password="pass12345"
+            email="seller@test.com", password="pass12345"
         )
         self.buyer = User.objects.create_user(
-            email="buyer@test.com",
-            password="pass12345"
+            email="buyer@test.com", password="pass12345"
         )
         self.other_user = User.objects.create_user(
-            email="other@test.com",
-            password="pass12345"
+            email="other@test.com", password="pass12345"
         )
 
         self.category = Category.objects.create(name="Electronics")
@@ -331,8 +328,7 @@ class OrderAPITests(APITestCase):
         self.assertEqual(order.status, Order.Status.CANCELLED)
         self.assertEqual(order.cancelled_by, Order.CancelledBy.BUYER)
         self.assertEqual(
-            order.cancellation_reason,
-            Order.CancellationReason.BUYER_CHANGED_MIND
+            order.cancellation_reason, Order.CancellationReason.BUYER_CHANGED_MIND
         )
 
     def test_buyer_can_cancel_accepted_order(self):
@@ -358,8 +354,7 @@ class OrderAPITests(APITestCase):
         self.assertEqual(order.status, Order.Status.CANCELLED)
         self.assertEqual(order.cancelled_by, Order.CancelledBy.BUYER)
         self.assertEqual(
-            order.cancellation_reason,
-            Order.CancellationReason.BUYER_CHANGED_MIND
+            order.cancellation_reason, Order.CancellationReason.BUYER_CHANGED_MIND
         )
         self.assertEqual(accepted_listing.status, Listing.Status.AVAILABLE)
 

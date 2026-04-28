@@ -7,20 +7,17 @@ from orders.models import Order
 
 class Review(models.Model):
     reviewer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='reviews_given'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviews_given"
     )
     reviewee = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='reviews_received'
+        related_name="reviews_received",
     )
-    order = models.OneToOneField(
-        Order,
-        on_delete=models.CASCADE
+    order = models.OneToOneField(Order, on_delete=models.CASCADE)
+    rating = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

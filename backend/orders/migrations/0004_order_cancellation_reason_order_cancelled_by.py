@@ -6,18 +6,41 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0003_alter_payment_status'),
+        ("orders", "0003_alter_payment_status"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='order',
-            name='cancellation_reason',
-            field=models.CharField(blank=True, choices=[('BUYER_CHANGED_MIND', 'Buyer changed mind'), ('SELLER_UNAVAILABLE', 'Seller unavailable'), ('PAYMENT_FAILED', 'Payment failed'), ('RESERVATION_EXPIRED', 'Reservation expired'), ('LISTING_UNAVAILABLE', 'Listing unavailable'), ('ADMIN_CANCELLED', 'Admin cancelled'), ('OTHER', 'Other')], max_length=50, null=True),
+            model_name="order",
+            name="cancellation_reason",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("BUYER_CHANGED_MIND", "Buyer changed mind"),
+                    ("SELLER_UNAVAILABLE", "Seller unavailable"),
+                    ("PAYMENT_FAILED", "Payment failed"),
+                    ("RESERVATION_EXPIRED", "Reservation expired"),
+                    ("LISTING_UNAVAILABLE", "Listing unavailable"),
+                    ("ADMIN_CANCELLED", "Admin cancelled"),
+                    ("OTHER", "Other"),
+                ],
+                max_length=50,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='order',
-            name='cancelled_by',
-            field=models.CharField(blank=True, choices=[('BUYER', 'Buyer'), ('SELLER', 'Seller'), ('SYSTEM', 'System'), ('PAYMENT', 'Payment')], max_length=20, null=True),
+            model_name="order",
+            name="cancelled_by",
+            field=models.CharField(
+                blank=True,
+                choices=[
+                    ("BUYER", "Buyer"),
+                    ("SELLER", "Seller"),
+                    ("SYSTEM", "System"),
+                    ("PAYMENT", "Payment"),
+                ],
+                max_length=20,
+                null=True,
+            ),
         ),
     ]
