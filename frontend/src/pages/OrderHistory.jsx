@@ -2,13 +2,37 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 
+function Toast({ message, onClose }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+
+  return (
+    <div style={{
+      position: "fixed", top: "80px", right: "24px", zIndex: 1000,
+      background: "#003b70", color: "white",
+      padding: "14px 20px", borderRadius: "12px",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      fontSize: "14px", maxWidth: "320px",
+      animation: "slideIn 0.3s ease",
+    }}>
+      <p style={{ margin: 0, fontWeight: "700" }}>✅ {message}</p>
+      <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.85 }}>
+        The buyer will be notified to complete payment.
+      </p>
+    </div>
+  );
+}
+
 export default function OrderHistory() {
   const [tab, setTab] = useState("buying");
   const [buyingOrders, setBuyingOrders] = useState([]);
   const [sellingOrders, setSellingOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [actionLoading, setActionLoading] = useState(null); // order id being acted on
+  const [actionLoading, setActionLoading] = useState(null);
+  const [toast, setToast] = useState(null);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -27,15 +51,14 @@ export default function OrderHistory() {
     }
   }, []);
 
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
-  async function handleAccept(orderId) {
+  async function handleAccept(orderId, listingTitle) {
     setActionLoading(orderId);
     try {
       await api.post(`/api/orders/${orderId}/accept/`);
       await loadOrders();
+      setToast(`Order accepted for "${listingTitle}"`);
     } catch (err) {
       alert(err.response?.data?.detail || "Could not accept order.");
     } finally {
@@ -44,13 +67,13 @@ export default function OrderHistory() {
   }
 
   async function handleReject(orderId) {
-    if (!window.confirm("Reject this order?")) return;
+    if (!window.confirm("Decline this order? The buyer will be notified.")) return;
     setActionLoading(orderId);
     try {
       await api.post(`/api/orders/${orderId}/reject/`);
       await loadOrders();
     } catch (err) {
-      alert(err.response?.data?.detail || "Could not reject order.");
+      alert(err.response?.data?.detail || "Could not decline order.");
     } finally {
       setActionLoading(null);
     }
@@ -69,16 +92,13 @@ export default function OrderHistory() {
     }
   }
 
-  function statusColor(status) {
-    const colors = {
-      PENDING: "#f59e0b",
-      ACCEPTED: "#3b82f6",
-      COMPLETED: "#22c55e",
-      CANCELLED: "#ef4444",
-      REJECTED: "#6b7280",
-    };
-    return colors[status] || "#6b7280";
-  }
+  const STATUS_COLORS = {
+    PENDING: "#d97706",
+    ACCEPTED: "#2563eb",
+    COMPLETED: "#16a34a",
+    CANCELLED: "#dc2626",
+    REJECTED: "#6b7280",
+  };
 
   const pendingSellerOrders = sellingOrders.filter((o) => o.status === "PENDING").length;
   const orders = tab === "buying" ? buyingOrders : sellingOrders;
@@ -88,16 +108,21 @@ export default function OrderHistory() {
 
   return (
     <div className="container">
+      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+
       <h1 className="form-title">Orders</h1>
 
+      {/* Tabs */}
       <div className="tabs">
         <button
           className={`tab-btn ${tab === "buying" ? "active" : ""}`}
           onClick={() => setTab("buying")}
         >
           Buying
-          {buyingOrders.length > 0 && (
-            <span className="tab-badge">{buyingOrders.length}</span>
+          {buyingOrders.filter(o => o.status === "ACCEPTED").length > 0 && (
+            <span className="tab-badge">
+              {buyingOrders.filter(o => o.status === "ACCEPTED").length}
+            </span>
           )}
         </button>
         <button
@@ -112,46 +137,51 @@ export default function OrderHistory() {
       </div>
 
       {orders.length === 0 ? (
-        <div className="empty-state">
+        <div className="empty-state" style={{ marginTop: "40px", textAlign: "center" }}>
           {tab === "buying" ? (
             <>
-              <p>You haven't placed any orders yet.</p>
-              <Link to="/listings" className="auth-button" style={{ display: "inline-block", marginTop: "12px" }}>
+              <p style={{ fontSize: "16px" }}>You haven't placed any orders yet.</p>
+              <Link to="/listings" className="auth-button"
+                style={{ display: "inline-block", marginTop: "16px", textDecoration: "none" }}>
                 Browse Listings
               </Link>
             </>
           ) : (
-            <p>No orders on your listings yet.</p>
+            <p style={{ fontSize: "16px" }}>No orders on your listings yet.</p>
           )}
         </div>
       ) : (
         <div className="orders-list">
           {orders.map((order) => (
-            <div key={order.id} className="order-card" style={{ flexDirection: "column", alignItems: "stretch", gap: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div className="order-card-left">
+            <div key={order.id} className="order-card"
+              style={{ flexDirection: "column", alignItems: "stretch", gap: "14px" }}>
+
+              {/* Top row: info + status */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
                   <p className="order-title">
-                    <Link to={`/listings/${order.listing}`} style={{ color: "#003b70", textDecoration: "none" }}>
+                    <Link to={`/listings/${order.listing}`}
+                      style={{ color: "#003b70", textDecoration: "none" }}>
                       {order.listing_title || `Listing #${order.listing}`}
                     </Link>
                   </p>
-                  <p className="order-meta">Order #{order.id}</p>
-                  <p className="order-meta">{new Date(order.created_at).toLocaleDateString()}</p>
+                  <p className="order-meta">Order #{order.id} · {new Date(order.created_at).toLocaleDateString()}</p>
                   {tab === "selling" && (
                     <p className="order-meta">
                       <strong>Buyer:</strong> {order.buyer_email || `User #${order.buyer}`}
                     </p>
                   )}
                 </div>
-                <div className="order-card-right">
+                <div style={{ textAlign: "right" }}>
                   <p className="order-price">${parseFloat(order.offered_price).toFixed(2)}</p>
-                  <span className="status-badge" style={{ backgroundColor: statusColor(order.status) }}>
+                  <span className="status-badge"
+                    style={{ backgroundColor: STATUS_COLORS[order.status] || "#6b7280", color: "white" }}>
                     {order.status}
                   </span>
                 </div>
               </div>
 
-              {/* Seller actions */}
+              {/* SELLER action buttons */}
               {tab === "selling" && (
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                   {order.status === "PENDING" && (
@@ -159,7 +189,7 @@ export default function OrderHistory() {
                       <button
                         className="auth-button"
                         style={{ width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px" }}
-                        onClick={() => handleAccept(order.id)}
+                        onClick={() => handleAccept(order.id, order.listing_title)}
                         disabled={actionLoading === order.id}
                       >
                         {actionLoading === order.id ? "..." : "✓ Accept"}
@@ -170,35 +200,49 @@ export default function OrderHistory() {
                         onClick={() => handleReject(order.id)}
                         disabled={actionLoading === order.id}
                       >
-                        {actionLoading === order.id ? "..." : "✕ Reject"}
+                        {actionLoading === order.id ? "..." : "✕ Decline"}
                       </button>
                     </>
                   )}
                   {order.status === "ACCEPTED" && (
-                    <button
-                      className="auth-button"
-                      style={{ width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px" }}
-                      onClick={() => handleComplete(order.id)}
-                      disabled={actionLoading === order.id}
-                    >
-                      {actionLoading === order.id ? "..." : "Mark Complete"}
-                    </button>
+                    <>
+                      <p style={{ fontSize: "13px", color: "#2563eb", margin: "0 auto 0 0", alignSelf: "center" }}>
+                        ⏳ Awaiting buyer payment
+                      </p>
+                      <button
+                        className="auth-button"
+                        style={{ width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px" }}
+                        onClick={() => handleComplete(order.id)}
+                        disabled={actionLoading === order.id}
+                      >
+                        {actionLoading === order.id ? "..." : "Mark Complete"}
+                      </button>
+                    </>
                   )}
-                  <Link to={`/orders/${order.id}`} className="btn-secondary" style={{ padding: "8px 20px", fontSize: "14px" }}>
+                  <Link to={`/orders/${order.id}`} className="btn-secondary"
+                    style={{ padding: "8px 20px", fontSize: "14px", textDecoration: "none" }}>
                     View Details
                   </Link>
                 </div>
               )}
 
-              {/* Buyer actions */}
+              {/* BUYER action buttons */}
               {tab === "buying" && (
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <Link to={`/orders/${order.id}`} className="btn-secondary" style={{ padding: "8px 20px", fontSize: "14px" }}>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <Link to={`/orders/${order.id}`} className="btn-secondary"
+                    style={{ padding: "8px 20px", fontSize: "14px", textDecoration: "none" }}>
                     View Details
                   </Link>
                   {order.status === "ACCEPTED" && (
-                    <Link to={`/checkout/${order.id}`} className="auth-button" style={{ display: "inline-block", width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px" }}>
-                      Pay Now
+                    <Link to={`/checkout/${order.id}`} className="auth-button"
+                      style={{ display: "inline-block", width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px", textDecoration: "none" }}>
+                      💳 Pay Now
+                    </Link>
+                  )}
+                  {order.status === "COMPLETED" && (
+                    <Link to={`/reviews/create/${order.id}`} className="btn-secondary"
+                      style={{ padding: "8px 20px", fontSize: "14px", textDecoration: "none" }}>
+                      ⭐ Leave Review
                     </Link>
                   )}
                 </div>

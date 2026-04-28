@@ -14,7 +14,6 @@ export default function CreateListing() {
   const [categories, setCategories] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,12 +26,10 @@ export default function CreateListing() {
   function handleImageChange(e) {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.size > 5 * 1024 * 1024) {
       setError("Image must be under 5MB.");
       return;
     }
-
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
     setError("");
@@ -44,11 +41,19 @@ export default function CreateListing() {
     setError("");
 
     try {
-      // Step 1: Create the listing
+      // FIX: use string representation to avoid floating point issues
+      // parseFloat("300").toFixed(2) = "300.00" → no rounding errors
+      const priceValue = parseFloat(price);
+      if (isNaN(priceValue) || priceValue < 0) {
+        setError("Please enter a valid price.");
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         title,
         description,
-        price: Math.round(parseFloat(price) * 100) / 100,
+        price: priceValue.toFixed(2),   // "300.00" not 299.98
         condition,
       };
       if (categoryId) payload.category_id = parseInt(categoryId);
@@ -56,7 +61,6 @@ export default function CreateListing() {
       const res = await api.post("/api/listings/", payload);
       const listingId = res.data.id;
 
-      // Step 2: Upload image if provided
       if (imageFile) {
         const formData = new FormData();
         formData.append("image", imageFile);

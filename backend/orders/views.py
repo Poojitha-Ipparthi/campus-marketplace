@@ -8,7 +8,6 @@ import stripe
 from django.conf import settings
 
 from users.views import IsVerified
-
 from listings.models import Listing
 from .models import Order, Payment
 from .permissions import IsBuyerOrSellerForRead
@@ -27,19 +26,16 @@ class OrderListCreateView(generics.ListCreateAPIView):
         role = self.request.query_params.get("role", "buyer")
 
         if role == "seller":
-            # Orders placed on the current user's listings
             return Order.objects.filter(
                 listing__seller=user
             ).select_related("listing", "buyer").order_by("-created_at")
 
-        # Default: orders placed by this user as buyer
         return Order.objects.filter(buyer=user).order_by("-created_at")
 
     def perform_create(self, serializer):
-        from listings.models import Listing
-        listing = serializer.validated_data.get('listing')
+        listing = serializer.validated_data.get("listing")
 
-        # Check if reservation has expired and release it
+        # Release expired reservations before creating new order
         if listing and listing.status == Listing.Status.RESERVED:
             expired_order = Order.objects.filter(
                 listing=listing,
@@ -66,9 +62,9 @@ class PaymentListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Payment.objects.filter(order__buyer=self.request.user).order_by(
-            "-created_at"
-        )
+        return Payment.objects.filter(
+            order__buyer=self.request.user
+        ).order_by("-created_at")
 
 
 class PaymentDetailView(generics.RetrieveAPIView):
@@ -96,8 +92,22 @@ def create_payment_intent(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
+            # If payment already exists and is PENDING, return the existing intent
+            # so the buyer can retry without creating a duplicate
             existing_payment = Payment.objects.filter(order=order).first()
             if existing_payment:
+                if existing_payment.status == Payment.Status.PENDING:
+                    stripe.api_key = settings.STRIPE_SECRET_KEY
+                    intent = stripe.PaymentIntent.retrieve(
+                        existing_payment.stripe_payment_intent_id
+                    )
+                    return Response(
+                        {
+                            "payment": PaymentSerializer(existing_payment).data,
+                            "client_secret": intent.client_secret,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
                 return Response(
                     {"detail": "Payment already exists for this order."},
                     status=status.HTTP_409_CONFLICT,
@@ -150,29 +160,37 @@ def payment_webhook(request):
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except ValueError:
-        return Response(
-            {"detail": "Invalid payload."}, status=status.HTTP_400_BAD_REQUEST
-        )
-    except stripe.error.SignatureVerificationError:
-        return Response(
-            {"detail": "Invalid signature."}, status=status.HTTP_400_BAD_REQUEST
-        )
+    if not webhook_secret:
+        # Dev fallback: no webhook secret set, process event directly
+        import json
+        try:
+            event = json.loads(payload)
+        except Exception:
+            return Response({"detail": "Invalid payload."}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        try:
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except ValueError:
+            return Response({"detail": "Invalid payload."}, status=status.HTTP_400_BAD_REQUEST)
+        except stripe.error.SignatureVerificationError:
+            return Response({"detail": "Invalid signature."}, status=status.HTTP_400_BAD_REQUEST)
 
     if event["type"] == "payment_intent.succeeded":
         intent = event["data"]["object"]
-        order_id = intent["metadata"].get("order_id")
+        order_id = intent.get("metadata", {}).get("order_id")
         try:
             payment = Payment.objects.get(stripe_payment_intent_id=intent["id"])
             payment.status = Payment.Status.SUCCEEDED
             payment.save(update_fields=["status", "updated_at"])
-            order = Order.objects.get(pk=order_id)
-            order.status = Order.Status.COMPLETED
-            order.save(update_fields=["status", "updated_at"])
-            order.listing.status = Listing.Status.SOLD
-            order.listing.save(update_fields=["status"])
+
+            if order_id:
+                order = Order.objects.get(pk=order_id)
+                if order.status == Order.Status.ACCEPTED:
+                    order.status = Order.Status.COMPLETED
+                    order.save(update_fields=["status", "updated_at"])
+                    order.listing.status = Listing.Status.SOLD
+                    order.listing.save(update_fields=["status"])
         except (Payment.DoesNotExist, Order.DoesNotExist):
             pass
 
@@ -182,11 +200,12 @@ def payment_webhook(request):
             payment = Payment.objects.get(stripe_payment_intent_id=intent["id"])
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status", "updated_at"])
-            order = Order.objects.get(pk=payment.order.id)
-            order.cancel_due_to_payment_failure()
-            order.listing.status = Listing.Status.AVAILABLE
-            order.listing.save(update_fields=["status"])
-        except (Payment.DoesNotExist, Order.DoesNotExist):
+            order = payment.order
+            if order.status in [Order.Status.PENDING, Order.Status.ACCEPTED]:
+                order.cancel_due_to_payment_failure()
+                order.listing.status = Listing.Status.AVAILABLE
+                order.listing.save(update_fields=["status"])
+        except Payment.DoesNotExist:
             pass
 
     return Response({"detail": "Webhook received."}, status=status.HTTP_200_OK)
@@ -197,9 +216,7 @@ def payment_webhook(request):
 def accept_order(request, pk):
     try:
         with transaction.atomic():
-            order = (
-                Order.objects.select_related("listing").select_for_update().get(pk=pk)
-            )
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
             listing = order.listing
 
             if request.user != listing.seller:
@@ -221,7 +238,8 @@ def accept_order(request, pk):
                 )
 
             order.status = Order.Status.ACCEPTED
-            order.reserved_until = timezone.now() + timedelta(minutes=10)
+            # 24-hour reservation window — much more realistic for campus use
+            order.reserved_until = timezone.now() + timedelta(hours=24)
             order.save(update_fields=["status", "reserved_until", "updated_at"])
 
             listing.status = Listing.Status.RESERVED
@@ -230,9 +248,7 @@ def accept_order(request, pk):
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValidationError as e:
         return Response({"detail": e.messages}, status=status.HTTP_400_BAD_REQUEST)
     except IntegrityError:
@@ -247,9 +263,7 @@ def accept_order(request, pk):
 def reject_order(request, pk):
     try:
         with transaction.atomic():
-            order = (
-                Order.objects.select_for_update().select_related("listing").get(pk=pk)
-            )
+            order = Order.objects.select_for_update().select_related("listing").get(pk=pk)
 
             if request.user != order.listing.seller:
                 return Response(
@@ -262,9 +276,7 @@ def reject_order(request, pk):
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValidationError as e:
         return Response({"detail": e.messages}, status=status.HTTP_400_BAD_REQUEST)
     except IntegrityError:
@@ -279,9 +291,7 @@ def reject_order(request, pk):
 def cancel_order(request, pk):
     try:
         with transaction.atomic():
-            order = (
-                Order.objects.select_for_update().select_related("listing").get(pk=pk)
-            )
+            order = Order.objects.select_for_update().select_related("listing").get(pk=pk)
             listing = Listing.objects.select_for_update().get(pk=order.listing_id)
 
             if request.user != order.buyer:
@@ -299,9 +309,7 @@ def cancel_order(request, pk):
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValidationError as e:
         return Response({"detail": e.messages}, status=status.HTTP_400_BAD_REQUEST)
     except IntegrityError:
@@ -316,9 +324,7 @@ def cancel_order(request, pk):
 def complete_order(request, pk):
     try:
         with transaction.atomic():
-            order = (
-                Order.objects.select_for_update().select_related("listing").get(pk=pk)
-            )
+            order = Order.objects.select_for_update().select_related("listing").get(pk=pk)
             listing = Listing.objects.select_for_update().get(pk=order.listing_id)
 
             if request.user != listing.seller:
@@ -335,9 +341,7 @@ def complete_order(request, pk):
         return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
 
     except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND
-        )
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
     except ValidationError as e:
         return Response({"detail": e.messages}, status=status.HTTP_400_BAD_REQUEST)
     except IntegrityError:
