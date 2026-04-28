@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 
-// Pages YOU own
 import Home from "./pages/Home";
 import Listings from "./pages/Listings";
 import ListingDetail from "./pages/ListingDetail";
@@ -10,7 +9,15 @@ import Signup from "./pages/Signup";
 import Verification from "./pages/Verification";
 import UserProfile from "./pages/UserProfile";
 import PublicProfile from "./pages/PublicProfile";
+
 import CreateListing from "./pages/CreateListing";
+import OrderHistory from "./pages/OrderHistory";
+import OrderDetail from "./pages/OrderDetail";
+import Checkout from "./pages/Checkout";
+import Messages from "./pages/Messages";
+import Report from "./pages/Report";
+import LeaveReview from "./pages/LeaveReview";
+
 
 export default function App() {
   return (
@@ -27,8 +34,13 @@ export default function App() {
 
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/users/:id" element={<PublicProfile />} />
-
           <Route path="/create-listing" element={<CreateListing />} />
+          <Route path="/orders" element={<OrderHistory />} />
+          <Route path="/orders/:id" element={<OrderDetail />} />
+          <Route path="/checkout/:orderId" element={<Checkout />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/report" element={<Report />} />
+          <Route path="/reviews/create/:orderId" element={<LeaveReview />} />
         </Routes>
       </Layout>
     </BrowserRouter>
