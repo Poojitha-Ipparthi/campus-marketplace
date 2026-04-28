@@ -309,9 +309,65 @@ img {
 /* ===== Detail Layout (legacy) ===== */
 .detail-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
+  grid-template-columns: 1fr 420px;
+  gap: 60px;
+  align-items: center;
+  max-width: 1100px;
+  margin: auto;
+  padding: 40px;
+}
+
+.auth-hero h1 {
+  color: #fdb515;
+  font-size: 48px;
+}
+
+.auth-hero p {
+  font-size: 22px;
+  color: #003b70;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+}
+
+.auth-card h2 {
+  color: #fdb515;
+}
+
+.auth-subtitle {
+  color: #555;
+}
+
+.auth-footer {
+  text-align: center;
   margin-top: 20px;
+}
+
+.forgot-password {
+  margin-top: 8px;
+  text-align: right;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #003b70;
+  margin: 0 0 8px;
+}
+
+.forgot-link {
+  font-size: 13px;
+  color: #003b70;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
 }
 
 .detail-image {
@@ -630,140 +686,50 @@ img {
 .form-card {
   background: white;
   border-radius: 14px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
   padding: 32px;
   max-width: 600px;
   margin: 0 auto;
 }
-
-.form-title    { color: #003b70; margin-bottom: 4px; font-size: 24px; }
+.form-title { color: #003b70; margin-bottom: 4px; }
 .form-subtitle { color: #555; margin-bottom: 24px; }
-
 .image-preview { margin: 12px 0; border-radius: 8px; overflow: hidden; max-height: 200px; }
 .image-preview img { width: 100%; object-fit: cover; }
 
-/* ===== Order Pages ===== */
 .orders-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
 .order-card-link { text-decoration: none; color: inherit; }
-.order-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+.order-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+.order-card:hover { transform: translateY(-2px); }
+.order-title { font-weight: bold; color: #003b70; margin: 0 0 4px; }
+.order-meta { font-size: 13px; color: #777; margin: 2px 0; }
+.order-price { font-weight: bold; color: #2e7d32; margin: 0 0 8px; }
+.order-card-right { text-align: right; }
+.status-badge { color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.empty-state { text-align: center; padding: 60px 20px; color: #777; }
+
+/* ===== Order Detail ===== */
+.detail-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  transition: 0.2s;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
-.order-card:hover { transform: translateY(-2px); }
-.order-title  { font-weight: bold; color: #003b70; margin: 0 0 4px; }
-.order-meta   { font-size: 13px; color: #777; margin: 2px 0; }
-.order-price  { font-weight: bold; color: #2e7d32; margin: 0 0 8px; }
-.order-card-right { text-align: right; }
-
-/* Order detail rows */
-.detail-row   { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
 .detail-label { color: #777; font-size: 14px; }
 .detail-value { font-weight: 500; color: #111; }
-
-/* ===== Buttons ===== */
+.back-link { color: #003b70; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 8px; }
+.back-link:hover { color: #fdb515; }
 .btn-danger { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 .btn-danger:hover { background: #dc2626; }
 .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-secondary {
-  background: white;
-  color: #003b70;
-  border: 2px solid #003b70;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-}
-.btn-secondary:hover { background: #003b70; color: white; }
-
 /* ===== Messages ===== */
 .messages-list { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; max-height: 500px; overflow-y: auto; }
 .message-bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px; }
-.message-mine   { align-self: flex-end; background: #003b70; color: white; }
+.message-mine { align-self: flex-end; background: #003b70; color: white; }
 .message-theirs { align-self: flex-start; background: white; border: 1px solid #e5e7eb; }
 .message-content { margin: 0 0 4px; }
-.message-meta   { font-size: 11px; opacity: 0.7; margin: 0; }
-.message-form   { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+.message-meta { font-size: 11px; opacity: 0.7; margin: 0; }
+.message-form { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
 
-/* ===== Order Tabs (Seller Dashboard) ===== */
-.tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid #e5e7eb; }
-.tab-btn {
-  background: none;
-  border: none;
-  padding: 10px 24px;
-  font-size: 15px;
-  font-weight: bold;
-  color: #777;
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px;
-  transition: 0.15s;
-}
-.tab-btn:hover { color: #003b70; }
-.tab-btn.active { color: #003b70; border-bottom-color: #003b70; }
-.tab-badge {
-  display: inline-block;
-  background: #ef4444;
-  color: white;
-  border-radius: 999px;
-  font-size: 11px;
-  padding: 1px 7px;
-  margin-left: 6px;
-  font-weight: bold;
-}
-
-/* ===== New User Badge ===== */
-.new-user-badge {
-  display: inline-block;
-  background: #fdb515;
-  color: #003b70;
-  font-size: 11px;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 999px;
-  margin-top: 6px;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 900px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .detail-layout,
-  .profile-layout,
-  .auth-page {
-    grid-template-columns: 1fr;
-  }
-
-  .auth-page { gap: 30px; }
-  .auth-hero h1 { font-size: 36px; }
-  .auth-hero p  { font-size: 18px; }
-}
-
-@media (max-width: 600px) {
-  .container { padding: 20px; }
-  .grid { grid-template-columns: 1fr; }
-
-  .nav {
-    flex-direction: column;
-    gap: 10px;
-    padding: 18px 20px;
-  }
-
-  .nav-links {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .auth-page { padding: 24px; }
-  .auth-card, .verify-card { padding: 24px; }
-}
+/* ===== Success message ===== */
+.success { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; }

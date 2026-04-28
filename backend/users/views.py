@@ -11,14 +11,22 @@ from .serializers import RegisterSerializer, UserSerializer
 from .models import User, EmailVerification
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import VerifiedTokenObtainPairSerializer
+from .serializers import (
+    PasswordResetRequestSerializer,
+    PasswordResetVerifyCodeSerializer,
+    PasswordResetConfirmSerializer,
+)
+
 
 class IsVerified(permissions.BasePermission):
     message = "Please verify your email before accessing this feature."
 
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.verified)
-    
-    
+        return bool(
+            request.user and request.user.is_authenticated and request.user.verified
+        )
+
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
@@ -55,12 +63,9 @@ class SendVerificationCodeView(APIView):
                 {"detail": "This email is already verified."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        
+
         # Invalidate any existing unused codes first
-        EmailVerification.objects.filter(
-            user=user,
-            is_used=False
-        ).update(is_used=True)
+        EmailVerification.objects.filter(user=user, is_used=False).update(is_used=True)
 
         code = "".join(random.choices(string.digits, k=6))
 
@@ -140,3 +145,105 @@ class VerifyCodeView(APIView):
 
 class VerifiedTokenObtainPairView(TokenObtainPairView):
     serializer_class = VerifiedTokenObtainPairSerializer
+
+
+class PasswordResetRequestView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"].lower()
+        user = User.objects.filter(email=email).first()
+
+        if user:
+            code = str(random.randint(100000, 999999))
+
+            EmailVerification.objects.create(
+                user=user,
+                code=code,
+                expires_at=timezone.now() + timedelta(minutes=10),
+            )
+
+            send_mail(
+                subject="Campus Marketplace password reset code",
+                message=f"Your password reset code is {code}. It expires in 10 minutes.",
+                from_email=None,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+        return Response(
+            {"detail": "If that email exists, a password reset code has been sent."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetVerifyCodeView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = PasswordResetVerifyCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"].lower()
+        code = serializer.validated_data["code"]
+
+        user = User.objects.filter(email=email).first()
+
+        if not user:
+            return Response(
+                {"detail": "Invalid or expired reset code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        verification = (
+            EmailVerification.objects.filter(user=user, code=code, is_used=False)
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not verification or verification.is_expired():
+            return Response(
+                {"detail": "Invalid or expired reset code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"detail": "Reset code verified."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"].lower()
+        code = serializer.validated_data["code"]
+        new_password = serializer.validated_data["new_password"]
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"detail": "Invalid or expired reset code."}, status=400)
+
+        verification = (
+            EmailVerification.objects.filter(user=user, code=code, is_used=False)
+            .order_by("-created_at")
+            .first()
+        )
+
+        if not verification or verification.is_expired():
+            return Response({"detail": "Invalid or expired reset code."}, status=400)
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+
+        verification.is_used = True
+        verification.save(update_fields=["is_used"])
+
+        return Response({"detail": "Password reset successfully."})
