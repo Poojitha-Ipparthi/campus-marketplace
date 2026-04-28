@@ -48,7 +48,7 @@ export default function CreateListing() {
       const payload = {
         title,
         description,
-        price: parseFloat(parseFloat(price).toFixed(2)),
+        price: Math.round(parseFloat(price) * 100) / 100,
         condition,
       };
       if (categoryId) payload.category_id = parseInt(categoryId);
