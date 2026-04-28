@@ -40,8 +40,8 @@ export default function ListingDetail() {
         return (
             <main className="container">
                 <p className="error">{error}</p>
-                <Link className="text-link" to="/listings">
-                    Back to listings
+                <Link className="back-link" to="/listings">
+                    ← Back to listings
                 </Link>
             </main>
         );
@@ -62,7 +62,7 @@ export default function ListingDetail() {
 
     return (
         <main className="container detail-page">
-            <Link className="text-link detail-back-link" to="/listings">
+            <Link className="back-link" to="/listings">
                 ← Back to listings
             </Link>
 
@@ -101,7 +101,11 @@ export default function ListingDetail() {
                         {listing.category?.name || listing.category_name || "Uncategorized"}
                     </p>
 
-                    <Link className="button-link" to={`/users/${listing.seller}`}>
+                    <Link
+                        className="button-link"
+                        to={`/users/${listing.seller}`}
+                        state={{ fromListingId: listing.id }}
+                    >
                         View Seller Profile
                     </Link>
                 </div>

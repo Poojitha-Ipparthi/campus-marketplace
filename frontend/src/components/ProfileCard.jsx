@@ -1,36 +1,32 @@
-export default function ProfileCard({ user, photo, title = "Profile" }) {
+export default function ProfileCard({ user, photo }) {
   if (!user) {
     return <p>Profile not available.</p>;
   }
 
   const displayName =
-    user.name ||
-    user.full_name ||
-    user.username ||
-    user.email ||
-    `User #${user.id}`;
+    user.full_name || user.name || user.username || `User #${user.id}`;
 
   return (
-    <section className="profile-card">
-      <div className="profile-photo">
+    <section className="seller-profile-card">
+      <div className="seller-photo-circle">
         {photo ? <img src={photo} alt={displayName} /> : <span>👤</span>}
       </div>
 
-      <h2>{title}</h2>
-      <p>
-        <strong>Name:</strong> {displayName}
-      </p>
-      <p>
-        <strong>Email:</strong> {user.email || "Not shown"}
-      </p>
-      <p>
-        <strong>Trust Score:</strong>{" "}
-        {user.trust_score ?? user.trustScore ?? "Not available"}
-      </p>
-      <p>
-        <strong>Member Since:</strong>{" "}
-        {user.created_at ? new Date(user.created_at).toLocaleDateString() : "Not available"}
-      </p>
+      <h3 className="profile-name">{displayName}</h3>
+
+      <div className="seller-profile-info">
+        <p>
+          <strong>Trust Score:</strong>{" "}
+          {user.trust_score ?? user.trustScore ?? "Not available"}
+        </p>
+
+        <p>
+          <strong>Member Since:</strong>{" "}
+          {user.created_at
+            ? new Date(user.created_at).toLocaleDateString()
+            : "Not available"}
+        </p>
+      </div>
     </section>
   );
 }

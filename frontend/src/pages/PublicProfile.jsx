@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, Link, useParams } from "react-router-dom";
 import { getListings } from "../api/listingsApi";
 import { getReviews } from "../api/reviewsApi";
 import ListingCard from "../components/ListingCard";
@@ -12,13 +12,16 @@ export default function PublicProfile() {
     const [listings, setListings] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [error, setError] = useState("");
+    const location = useLocation();
+    const fromListingId = location.state?.fromListingId;
 
     const seller = useMemo(() => {
         const first = listings[0];
 
         return {
             id,
-            email: first?.seller_email || `User #${id}`,
+            full_name: first?.seller_name || "",
+            email: first?.seller_email || "",
             trust_score: first?.seller_trust_score ?? "N/A",
             created_at: first?.seller_created_at || null,
         };
@@ -33,14 +36,10 @@ export default function PublicProfile() {
             setError("");
 
             const listingRes = await getListings({ seller: id });
-            const listingData = Array.isArray(listingRes.data) ? listingRes.data : [];
-            setListings(listingData);
+            setListings(Array.isArray(listingRes.data) ? listingRes.data : []);
 
             const reviewRes = await getReviews({ reviewee: id });
-            console.log("reviews:", reviewRes.data);
-
-            const reviewData = Array.isArray(reviewRes.data) ? reviewRes.data : [];
-            setReviews(reviewData);
+            setReviews(Array.isArray(reviewRes.data) ? reviewRes.data : []);
         } catch (err) {
             console.error("Public profile error:", err);
             setError("Could not load public profile.");
@@ -52,23 +51,34 @@ export default function PublicProfile() {
 
     return (
         <main className="container">
-            <h1>Seller Profile</h1>
+            {fromListingId && (
+                <Link
+                    className="back-link"
+                    to={`/listings/${fromListingId}`}
+                >
+                    ← Back to listing
+                </Link>
+            )}
+            <h1 className="profile-header">Seller Profile</h1>
 
             {error && <p className="error">{error}</p>}
 
-            <ProfileCard user={seller} title="Seller" />
+            <ProfileCard user={seller} />
 
-            <section className="filter-box">
+            <section className="profile-stats-section">
                 <h2>Seller Stats</h2>
-                <p>
-                    <strong>Active Listings:</strong> {activeCount}
-                </p>
-                <p>
-                    <strong>Items Sold:</strong> {soldCount}
-                </p>
+
+                <div className="profile-stats-content">
+                    <p>
+                        <strong>Active Listings:</strong> {activeCount}
+                    </p>
+                    <p>
+                        <strong>Items Sold:</strong> {soldCount}
+                    </p>
+                </div>
             </section>
 
-            <section>
+            <section className="profile-listings-section">
                 <h2>Listings</h2>
 
                 {listings.length === 0 && (
