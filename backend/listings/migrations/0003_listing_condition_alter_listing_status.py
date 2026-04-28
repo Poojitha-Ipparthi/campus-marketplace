@@ -6,18 +6,31 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('listings', '0002_category_listing_category'),
+        ("listings", "0002_category_listing_category"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='listing',
-            name='condition',
-            field=models.CharField(choices=[('NEW', 'New'), ('USED', 'Used')], default='USED', max_length=20),
+            model_name="listing",
+            name="condition",
+            field=models.CharField(
+                choices=[("NEW", "New"), ("USED", "Used")],
+                default="USED",
+                max_length=20,
+            ),
         ),
         migrations.AlterField(
-            model_name='listing',
-            name='status',
-            field=models.CharField(choices=[('AVAILABLE', 'Available'), ('RESERVED', 'Reserved'), ('SOLD', 'Sold'), ('CANCELLED', 'Cancelled')], default='AVAILABLE', max_length=20),
+            model_name="listing",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("AVAILABLE", "Available"),
+                    ("RESERVED", "Reserved"),
+                    ("SOLD", "Sold"),
+                    ("CANCELLED", "Cancelled"),
+                ],
+                default="AVAILABLE",
+                max_length=20,
+            ),
         ),
     ]

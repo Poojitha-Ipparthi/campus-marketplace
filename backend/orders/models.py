@@ -29,32 +29,20 @@ class Order(models.Model):
         OTHER = "OTHER", "Other"
 
     buyer = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="orders"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="orders"
     )
     listing = models.ForeignKey(
-        Listing,
-        on_delete=models.CASCADE,
-        related_name="orders"
+        Listing, on_delete=models.CASCADE, related_name="orders"
     )
     offered_price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING
+        max_length=20, choices=Status.choices, default=Status.PENDING
     )
     cancellation_reason = models.CharField(
-        max_length=50,
-        choices=CancellationReason.choices,
-        null=True,
-        blank=True
+        max_length=50, choices=CancellationReason.choices, null=True, blank=True
     )
     cancelled_by = models.CharField(
-        max_length=20,
-        choices=CancelledBy.choices,
-        null=True,
-        blank=True
+        max_length=20, choices=CancelledBy.choices, null=True, blank=True
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -63,7 +51,11 @@ class Order(models.Model):
     def clean(self):
         errors = {}
 
-        if self.listing_id and self.buyer_id and self.buyer_id == self.listing.seller_id:
+        if (
+            self.listing_id
+            and self.buyer_id
+            and self.buyer_id == self.listing.seller_id
+        ):
             errors["buyer"] = "You cannot place an order on your own listing."
 
         if self.offered_price is None or self.offered_price <= 0:
@@ -76,19 +68,25 @@ class Order(models.Model):
                 Listing.Status.SOLD,
                 Listing.Status.CANCELLED,
             ):
-                errors["listing"] = "Cannot place an order on a reserved, sold, or cancelled listing."
+                errors["listing"] = (
+                    "Cannot place an order on a reserved, sold, or cancelled listing."
+                )
 
         # Cancellation integrity
         if self.status == self.Status.CANCELLED:
             if not self.cancelled_by:
                 errors["cancelled_by"] = "Cancelled orders must specify who cancelled."
             if not self.cancellation_reason:
-                errors["cancellation_reason"] = "Cancelled orders must specify a reason."
+                errors["cancellation_reason"] = (
+                    "Cancelled orders must specify a reason."
+                )
         else:
             if self.cancelled_by is not None:
                 errors["cancelled_by"] = "Only cancelled orders can have cancelled_by."
             if self.cancellation_reason is not None:
-                errors["cancellation_reason"] = "Only cancelled orders can have a cancellation reason."
+                errors["cancellation_reason"] = (
+                    "Only cancelled orders can have a cancellation reason."
+                )
 
         if errors:
             raise ValidationError(errors)
@@ -116,31 +114,69 @@ class Order(models.Model):
 
     def cancel_by_buyer(self):
         if self.status not in [self.Status.PENDING, self.Status.ACCEPTED]:
-            raise ValidationError("Only pending or accepted orders can be cancelled by the buyer.")
+            raise ValidationError(
+                "Only pending or accepted orders can be cancelled by the buyer."
+            )
 
         self.status = self.Status.CANCELLED
         self.cancelled_by = self.CancelledBy.BUYER
         self.cancellation_reason = self.CancellationReason.BUYER_CHANGED_MIND
-        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_by",
+                "cancellation_reason",
+                "updated_at",
+            ]
+        )
 
     def cancel_by_seller(self):
         if self.status not in [self.Status.PENDING, self.Status.ACCEPTED]:
-            raise ValidationError("Only pending or accepted orders can be cancelled by the seller.")
+            raise ValidationError(
+                "Only pending or accepted orders can be cancelled by the seller."
+            )
 
         self.status = self.Status.CANCELLED
         self.cancelled_by = self.CancelledBy.SELLER
         self.cancellation_reason = self.CancellationReason.SELLER_UNAVAILABLE
-        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_by",
+                "cancellation_reason",
+                "updated_at",
+            ]
+        )
 
     def cancel_due_to_payment_failure(self):
         if self.status not in [self.Status.PENDING, self.Status.ACCEPTED]:
-            raise ValidationError("Only pending or accepted orders can be cancelled due to payment failure.")
+            raise ValidationError(
+                "Only pending or accepted orders can be cancelled due to payment failure."
+            )
 
         self.status = self.Status.CANCELLED
         self.cancelled_by = self.CancelledBy.PAYMENT
         self.cancellation_reason = self.CancellationReason.PAYMENT_FAILED
+
         self.reserved_until = None
-        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "reserved_until", "updated_at"])
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_by",
+                "cancellation_reason",
+                "reserved_until",
+                "updated_at",
+            ]
+        )
+
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_by",
+                "cancellation_reason",
+                "updated_at",
+            ]
+        )
 
     def cancel_due_to_expiration(self):
         if self.status != self.Status.ACCEPTED:
@@ -150,7 +186,23 @@ class Order(models.Model):
         self.cancelled_by = self.CancelledBy.SYSTEM
         self.cancellation_reason = self.CancellationReason.RESERVATION_EXPIRED
         self.reserved_until = None
-        self.save(update_fields=["status", "cancelled_by", "cancellation_reason", "reserved_until", "updated_at"])
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_by",
+                "cancellation_reason",
+                "reserved_until",
+                "updated_at",
+            ]
+        )
+        self.save(
+            update_fields=[
+                "status",
+                "cancelled_by",
+                "cancellation_reason",
+                "updated_at",
+            ]
+        )
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -168,17 +220,13 @@ class Payment(models.Model):
         REFUNDED = "REFUNDED", "Refunded"
 
     order = models.OneToOneField(
-        Order,
-        on_delete=models.CASCADE,
-        related_name="payment"
+        Order, on_delete=models.CASCADE, related_name="payment"
     )
     stripe_payment_intent_id = models.CharField(max_length=255, unique=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=10, default="USD")
     status = models.CharField(
-        max_length=50,
-        choices=Status.choices,
-        default=Status.PENDING
+        max_length=50, choices=Status.choices, default=Status.PENDING
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

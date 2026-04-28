@@ -7,13 +7,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0004_order_cancellation_reason_order_cancelled_by'),
+        ("orders", "0004_order_cancellation_reason_order_cancelled_by"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='payment',
-            name='order',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='payment', to='orders.order'),
+            model_name="payment",
+            name="order",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="payment",
+                to="orders.order",
+            ),
         ),
     ]

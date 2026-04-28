@@ -21,9 +21,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         try:
             serializer.save(reviewer=self.request.user)
         except IntegrityError:
-            raise ValidationError({
-                "detail": "You have already reviewed this order."
-            })
+            raise ValidationError({"detail": "You have already reviewed this order."})
 
 
 class ReviewDetailView(generics.RetrieveAPIView):

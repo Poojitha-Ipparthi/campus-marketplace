@@ -16,17 +16,19 @@ class BlockedUserSerializer(serializers.ModelSerializer):
             return attrs
 
         if blocked == request.user:
-            raise serializers.ValidationError({
-                "blocked": "A user cannot block themselves."
-            })
+            raise serializers.ValidationError(
+                {"blocked": "A user cannot block themselves."}
+            )
 
-        if blocked and BlockedUser.objects.filter(
-            blocker=request.user,
-            blocked=blocked
-        ).exists():
-            raise serializers.ValidationError({
-                "blocked": "This user is already blocked."
-            })
+        if (
+            blocked
+            and BlockedUser.objects.filter(
+                blocker=request.user, blocked=blocked
+            ).exists()
+        ):
+            raise serializers.ValidationError(
+                {"blocked": "This user is already blocked."}
+            )
 
         return attrs
 
@@ -52,8 +54,10 @@ class ReportSerializer(serializers.ModelSerializer):
         reported_message = attrs.get("reported_message")
 
         if not any([reported_user, reported_listing, reported_message]):
-            raise serializers.ValidationError({
-                "detail": "A report must target at least one user, listing, or message."
-            })
+            raise serializers.ValidationError(
+                {
+                    "detail": "A report must target at least one user, listing, or message."
+                }
+            )
 
         return attrs

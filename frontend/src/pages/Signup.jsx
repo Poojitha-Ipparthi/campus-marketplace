@@ -20,7 +20,7 @@ export default function Signup() {
             setError("");
 
             await signupUser({
-                name,
+                full_name: name,
                 email,
                 password,
             });

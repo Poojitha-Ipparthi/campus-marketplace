@@ -17,9 +17,7 @@ class BlockUserView(generics.ListCreateAPIView):
         try:
             serializer.save(blocker=self.request.user)
         except IntegrityError:
-            raise ValidationError({
-                "blocked": "This user is already blocked."
-            })
+            raise ValidationError({"blocked": "This user is already blocked."})
 
 
 class UnblockUserView(generics.DestroyAPIView):
@@ -41,9 +39,9 @@ class ReportListCreateView(generics.ListCreateAPIView):
         try:
             serializer.save(reporter=self.request.user)
         except IntegrityError:
-            raise ValidationError({
-                "detail": "Report creation conflicted with existing data."
-            })
+            raise ValidationError(
+                {"detail": "Report creation conflicted with existing data."}
+            )
 
 
 class ReportDetailView(generics.RetrieveAPIView):

@@ -22,7 +22,14 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["buyer", "status", "cancelled_by", "cancellation_reason", "created_at", "updated_at"]
+        read_only_fields = [
+            "buyer",
+            "status",
+            "cancelled_by",
+            "cancellation_reason",
+            "created_at",
+            "updated_at",
+        ]
 
     def validate(self, attrs):
         request = self.context.get("request")
@@ -31,23 +38,25 @@ class OrderSerializer(serializers.ModelSerializer):
         offered_price = attrs.get("offered_price")
 
         if listing and buyer and listing.seller == buyer:
-            raise serializers.ValidationError({
-                "detail": "You cannot place an order on your own listing."
-            })
+            raise serializers.ValidationError(
+                {"detail": "You cannot place an order on your own listing."}
+            )
 
         if listing and listing.status in [
             Listing.Status.RESERVED,
             Listing.Status.SOLD,
             Listing.Status.CANCELLED,
         ]:
-            raise serializers.ValidationError({
-                "detail": "Cannot place an order on a reserved, sold, or cancelled listing."
-            })
+            raise serializers.ValidationError(
+                {
+                    "detail": "Cannot place an order on a reserved, sold, or cancelled listing."
+                }
+            )
 
         if offered_price is not None and offered_price <= 0:
-            raise serializers.ValidationError({
-                "offered_price": "Offered price must be greater than zero."
-            })
+            raise serializers.ValidationError(
+                {"offered_price": "Offered price must be greater than zero."}
+            )
 
         return attrs
 
@@ -65,4 +74,11 @@ class PaymentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["stripe_payment_intent_id", "amount", "currency", "status", "created_at", "updated_at"]
+        read_only_fields = [
+            "stripe_payment_intent_id",
+            "amount",
+            "currency",
+            "status",
+            "created_at",
+            "updated_at",
+        ]

@@ -12,12 +12,10 @@ User = get_user_model()
 class ListingAPITests(APITestCase):
     def setUp(self):
         self.seller = User.objects.create_user(
-            email="seller@test.com",
-            password="pass12345"
+            email="seller@test.com", password="pass12345"
         )
         self.other_user = User.objects.create_user(
-            email="other@test.com",
-            password="pass12345"
+            email="other@test.com", password="pass12345"
         )
 
         self.category1 = Category.objects.create(name="Electronics")
@@ -110,7 +108,7 @@ class ListingAPITests(APITestCase):
         response = self.client.post(self.list_url, payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        
+
     def test_create_listing_rejects_negative_price(self):
         self.authenticate(self.seller)
 
@@ -125,7 +123,7 @@ class ListingAPITests(APITestCase):
         response = self.client.post(self.list_url, payload, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-  
+
     # -----------------------------
     # Listing detail tests
     # -----------------------------
@@ -151,9 +149,7 @@ class ListingAPITests(APITestCase):
         }
 
         response = self.client.patch(
-            f"/api/listings/{self.listing1.id}/",
-            payload,
-            format="json"
+            f"/api/listings/{self.listing1.id}/", payload, format="json"
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -168,9 +164,7 @@ class ListingAPITests(APITestCase):
         payload = {"title": "Hacked Title"}
 
         response = self.client.patch(
-            f"/api/listings/{self.listing1.id}/",
-            payload,
-            format="json"
+            f"/api/listings/{self.listing1.id}/", payload, format="json"
         )
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

@@ -61,20 +61,18 @@ export default function ListingDetail() {
     const imageUrl = listing.images?.[0]?.image_url;
 
     return (
-        <main className="container">
-            <Link className="text-link" to="/listings">
+        <main className="container detail-page">
+            <Link className="text-link detail-back-link" to="/listings">
                 ← Back to listings
             </Link>
 
-            <div className="detail-layout">
-                <div className="detail-image">
+            <section className="marketplace-detail-card">
+                <div className="marketplace-detail-image">
                     {imageUrl ? <img src={imageUrl} alt={listing.title} /> : "📦"}
                 </div>
 
-                <section className="detail-info">
+                <div className="marketplace-detail-info">
                     <h1>{listing.title}</h1>
-
-                    <p>{listing.description || "No description provided."}</p>
 
                     <p className="price large-price">
                         {Number(listing.price) === 0 ? "Free" : `$${listing.price}`}
@@ -85,29 +83,29 @@ export default function ListingDetail() {
                     </p>
 
                     <p>
+                        <strong>Description:</strong>{" "}
+                        {listing.description || "No description provided."}
+                    </p>
+
+                    <p>
                         <strong>Status:</strong> <StatusBadge value={listing.status} />
                     </p>
 
                     <p>
                         <strong>Seller:</strong>{" "}
-                        {listing.seller_email || `User #${listing.seller}`}
+                        {listing.seller_name || listing.seller_email || `User #${listing.seller}`}
                     </p>
 
                     <p>
                         <strong>Category:</strong>{" "}
-                        {listing.category_name ||
-                            listing.category?.name ||
-                            "Uncategorized"}
+                        {listing.category?.name || listing.category_name || "Uncategorized"}
                     </p>
 
-                    <Link
-                        className="button-link"
-                        to={`/users/${listing.seller}`}
-                    >
+                    <Link className="button-link" to={`/users/${listing.seller}`}>
                         View Seller Profile
                     </Link>
-                </section>
-            </div>
+                </div>
+            </section>
         </main>
     );
 }

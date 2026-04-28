@@ -9,8 +9,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'password', 'verified', 'trust_score', 'created_at']
-        read_only_fields = ['verified', 'trust_score', 'created_at']
+        fields = [
+            "id",
+            "email",
+            "password",
+            "full_name",
+            "verified",
+            "trust_score",
+            "created_at",
+        ]
+        read_only_fields = ["verified", "trust_score", "created_at"]
 
     def validate_password(self, value):
         import re
@@ -29,8 +37,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def validate_email(self, value):
-        if not value.endswith('.edu'):
-            raise serializers.ValidationError("Only .edu email addresses are allowed to register.")
+        if not value.endswith(".edu"):
+            raise serializers.ValidationError(
+                "Only .edu email addresses are allowed to register."
+            )
         return value
 
     def create(self, validated_data):
@@ -40,14 +50,22 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'verified', 'trust_score', 'created_at']
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "verified",
+            "trust_score",
+            "is_new_user",
+            "created_at",
+        ]
 
 
 class EmailVerificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmailVerification
-        fields = ['id', 'user', 'code', 'expires_at', 'is_used', 'created_at']
-        
+        fields = ["id", "user", "code", "expires_at", "is_used", "created_at"]
+
 
 class VerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):

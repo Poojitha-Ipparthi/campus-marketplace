@@ -6,19 +6,15 @@ from listings.models import Listing
 
 class Message(models.Model):
     sender = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='messages_sent'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="messages_sent"
     )
     receiver = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='messages_received'
+        related_name="messages_received",
     )
     listing = models.ForeignKey(
-        Listing,
-        on_delete=models.CASCADE,
-        related_name='messages'
+        Listing, on_delete=models.CASCADE, related_name="messages"
     )
     content = models.TextField()
     is_read = models.BooleanField(default=False)

@@ -12,16 +12,13 @@ User = get_user_model()
 class ReviewAPITests(APITestCase):
     def setUp(self):
         self.seller = User.objects.create_user(
-            email="seller@test.com",
-            password="pass12345"
+            email="seller@test.com", password="pass12345"
         )
         self.buyer = User.objects.create_user(
-            email="buyer@test.com",
-            password="pass12345"
+            email="buyer@test.com", password="pass12345"
         )
         self.other_user = User.objects.create_user(
-            email="other@test.com",
-            password="pass12345"
+            email="other@test.com", password="pass12345"
         )
 
         self.category = Category.objects.create(name="Electronics")
@@ -64,7 +61,7 @@ class ReviewAPITests(APITestCase):
             reviewee=self.seller,
             order=self.completed_order,
             rating=5,
-            comment="Great seller"
+            comment="Great seller",
         )
 
         response = self.client.get(f"/api/reviews/{review.id}/")
@@ -78,7 +75,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.completed_order.id,
             "rating": 5,
-            "comment": "Excellent transaction"
+            "comment": "Excellent transaction",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -97,7 +94,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.completed_order.id,
             "rating": 5,
-            "comment": "Excellent transaction"
+            "comment": "Excellent transaction",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -110,7 +107,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.pending_order.id,
             "rating": 4,
-            "comment": "Too early"
+            "comment": "Too early",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -124,7 +121,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.completed_order.id,
             "rating": 4,
-            "comment": "I was not the buyer"
+            "comment": "I was not the buyer",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -138,7 +135,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.other_user.id,
             "order": self.completed_order.id,
             "rating": 4,
-            "comment": "Wrong reviewee"
+            "comment": "Wrong reviewee",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -151,7 +148,7 @@ class ReviewAPITests(APITestCase):
             reviewee=self.seller,
             order=self.completed_order,
             rating=5,
-            comment="First review"
+            comment="First review",
         )
 
         self.authenticate(self.buyer)
@@ -160,7 +157,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.completed_order.id,
             "rating": 4,
-            "comment": "Second review"
+            "comment": "Second review",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -175,7 +172,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.completed_order.id,
             "rating": 0,
-            "comment": "Invalid rating"
+            "comment": "Invalid rating",
         }
 
         response = self.client.post(self.list_url, payload, format="json")
@@ -188,7 +185,7 @@ class ReviewAPITests(APITestCase):
             "reviewee": self.seller.id,
             "order": self.completed_order.id,
             "rating": 6,
-            "comment": "Invalid rating"
+            "comment": "Invalid rating",
         }
 
         response = self.client.post(self.list_url, payload, format="json")

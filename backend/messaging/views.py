@@ -9,9 +9,7 @@ class MessageListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Message.objects.filter(
-            sender=user
-        ) | Message.objects.filter(
+        return Message.objects.filter(sender=user) | Message.objects.filter(
             receiver=user
         )
 
@@ -25,7 +23,9 @@ class MessageDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Message.objects.filter(sender=user) | Message.objects.filter(receiver=user)
+        return Message.objects.filter(sender=user) | Message.objects.filter(
+            receiver=user
+        )
 
 
 class MarkMessageReadView(generics.UpdateAPIView):
