@@ -11,6 +11,7 @@ import {
     getAdminPayments,
 } from "../api/adminApi";
 
+
 /*
  * Normalizes API list responses — handles plain arrays,
  * paginated results, and keyed objects.
@@ -18,6 +19,8 @@ import {
 function normalizeList(data) {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.results)) return data.results;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data?.payments)) return data.payments;
     return [];
 }
 
@@ -52,21 +55,30 @@ export default function AdminDashboard() {
             if (statsRes.status === "fulfilled") {
                 setStats(statsRes.value.data);
             }
+
             if (usersRes.status === "fulfilled") {
                 setUsers(normalizeList(usersRes.value.data));
             }
+
             if (listingsRes.status === "fulfilled") {
                 setListings(normalizeList(listingsRes.value.data));
             }
+
             if (ordersRes.status === "fulfilled") {
                 setOrders(normalizeList(ordersRes.value.data));
             }
+
             if (paymentsRes.status === "fulfilled") {
                 // Backend returns plain array directly
                 const data = paymentsRes.value.data;
                 setPayments(Array.isArray(data) ? data : normalizeList(data));
             } else {
                 console.error("Payments fetch failed:", paymentsRes.reason);
+                setError(
+                    paymentsRes.reason?.response?.data?.detail ||
+                    paymentsRes.reason?.message ||
+                    "Could not load admin payments."
+                );
             }
         } catch (err) {
             setError(

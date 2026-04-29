@@ -35,17 +35,22 @@ export default function Login() {
 
             sessionStorage.removeItem("pendingSignupPassword");
 
-            // Check if user is staff/admin for admin dashboard access
+            let isStaff = false;
+
             try {
                 const meRes = await api.get("/api/auth/me/");
-                if (meRes.data.is_staff) {
+                isStaff = Boolean(meRes.data.is_staff);
+
+                if (isStaff) {
                     localStorage.setItem("isStaff", "true");
                 } else {
                     localStorage.removeItem("isStaff");
                 }
-            } catch {}
+            } catch {
+                localStorage.removeItem("isStaff");
+            }
 
-            navigate("/listings");
+            navigate(isStaff ? "/admin" : "/listings");
         } catch (err) {
             const data = err.response?.data;
             const message = data?.error?.message || data?.detail || err.message || "Login failed.";

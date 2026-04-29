@@ -1,29 +1,40 @@
 import random
 import string
 from datetime import timedelta
-from django.utils import timezone
-from django.core.mail import send_mail
+
 from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import RegisterSerializer, UserSerializer
-from .models import User, EmailVerification
+
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import VerifiedTokenObtainPairSerializer
+
+from .models import User, EmailVerification
 from .serializers import (
+    RegisterSerializer,
+    UserSerializer,
+    VerifiedTokenObtainPairSerializer,
     PasswordResetRequestSerializer,
     PasswordResetVerifyCodeSerializer,
     PasswordResetConfirmSerializer,
 )
+<<<<<<< HEAD
 from listings.models import Listing
 from orders.models import Order, Payment
+=======
+>>>>>>> 7903beeadc31f4c1e250f9ce921aa27051fb945a
 from .admin_serializers import (
     AdminUserSerializer,
     AdminListingSerializer,
     AdminOrderSerializer,
     AdminPaymentSerializer,
 )
+
+from listings.models import Listing
+from orders.models import Order, Payment
 
 
 class IsVerified(permissions.BasePermission):
@@ -55,7 +66,8 @@ class SendVerificationCodeView(APIView):
 
         if not email:
             return Response(
-                {"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Email is required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = User.objects.filter(email=email).first()
@@ -72,13 +84,14 @@ class SendVerificationCodeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Invalidate any existing unused codes first
         EmailVerification.objects.filter(user=user, is_used=False).update(is_used=True)
 
         code = "".join(random.choices(string.digits, k=6))
 
         EmailVerification.objects.create(
-            user=user, code=code, expires_at=timezone.now() + timedelta(minutes=10)
+            user=user,
+            code=code,
+            expires_at=timezone.now() + timedelta(minutes=10),
         )
 
         try:
@@ -141,13 +154,14 @@ class VerifyCodeView(APIView):
             )
 
         verification.is_used = True
-        verification.save()
+        verification.save(update_fields=["is_used"])
 
         user.verified = True
-        user.save()
+        user.save(update_fields=["verified"])
 
         return Response(
-            {"detail": "Email verified successfully."}, status=status.HTTP_200_OK
+            {"detail": "Email verified successfully."},
+            status=status.HTTP_200_OK,
         )
 
 
@@ -156,7 +170,7 @@ class VerifiedTokenObtainPairView(TokenObtainPairView):
 
 
 class PasswordResetRequestView(APIView):
-    permission_classes = []
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -177,7 +191,7 @@ class PasswordResetRequestView(APIView):
             send_mail(
                 subject="Campus Marketplace password reset code",
                 message=f"Your password reset code is {code}. It expires in 10 minutes.",
-                from_email=None,
+                from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
                 fail_silently=False,
             )
@@ -189,7 +203,7 @@ class PasswordResetRequestView(APIView):
 
 
 class PasswordResetVerifyCodeView(APIView):
-    permission_classes = []
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = PasswordResetVerifyCodeSerializer(data=request.data)
@@ -225,7 +239,7 @@ class PasswordResetVerifyCodeView(APIView):
 
 
 class PasswordResetConfirmView(APIView):
-    permission_classes = []
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
@@ -236,8 +250,12 @@ class PasswordResetConfirmView(APIView):
         new_password = serializer.validated_data["new_password"]
 
         user = User.objects.filter(email=email).first()
+
         if not user:
-            return Response({"detail": "Invalid or expired reset code."}, status=400)
+            return Response(
+                {"detail": "Invalid or expired reset code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         verification = (
             EmailVerification.objects.filter(user=user, code=code, is_used=False)
@@ -246,7 +264,10 @@ class PasswordResetConfirmView(APIView):
         )
 
         if not verification or verification.is_expired():
-            return Response({"detail": "Invalid or expired reset code."}, status=400)
+            return Response(
+                {"detail": "Invalid or expired reset code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user.set_password(new_password)
         user.save(update_fields=["password"])
@@ -254,7 +275,10 @@ class PasswordResetConfirmView(APIView):
         verification.is_used = True
         verification.save(update_fields=["is_used"])
 
-        return Response({"detail": "Password reset successfully."})
+        return Response(
+            {"detail": "Password reset successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class IsAdminUserOnly(permissions.BasePermission):
@@ -270,11 +294,6 @@ class AdminStatsView(APIView):
     permission_classes = [IsAdminUserOnly]
 
     def get(self, request):
-        try:
-            payment_count = Payment.objects.count()
-        except Exception:
-            payment_count = 0
-
         data = {
             "total_users": User.objects.count(),
             "active_users": User.objects.filter(is_active=True).count(),
@@ -292,7 +311,7 @@ class AdminStatsView(APIView):
             "completed_orders": Order.objects.filter(
                 status=Order.Status.COMPLETED
             ).count(),
-            "total_payments": payment_count,
+            "total_payments": Payment.objects.count(),
         }
 
         return Response(data, status=status.HTTP_200_OK)
@@ -315,12 +334,15 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
         user = self.get_object()
 
         allowed_fields = ["full_name", "verified", "is_active", "is_staff"]
+        changed_fields = []
 
         for field in allowed_fields:
             if field in request.data:
                 setattr(user, field, request.data[field])
+                changed_fields.append(field)
 
-        user.save(update_fields=allowed_fields)
+        if changed_fields:
+            user.save(update_fields=changed_fields)
 
         return Response(AdminUserSerializer(user).data)
 
@@ -332,18 +354,24 @@ class AdminUserDeactivateView(APIView):
         user = User.objects.filter(pk=pk).first()
 
         if not user:
-            return Response({"detail": "User not found."}, status=404)
+            return Response(
+                {"detail": "User not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         if user == request.user:
             return Response(
                 {"detail": "You cannot deactivate your own admin account."},
-                status=400,
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         user.is_active = False
         user.save(update_fields=["is_active"])
 
-        return Response({"detail": "User deactivated successfully."})
+        return Response(
+            {"detail": "User deactivated successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminListingListView(generics.ListAPIView):
@@ -363,12 +391,15 @@ class AdminListingDetailView(generics.RetrieveUpdateAPIView):
         listing = self.get_object()
 
         allowed_fields = ["title", "price", "status", "condition"]
+        changed_fields = []
 
         for field in allowed_fields:
             if field in request.data:
                 setattr(listing, field, request.data[field])
+                changed_fields.append(field)
 
-        listing.save(update_fields=allowed_fields)
+        if changed_fields:
+            listing.save(update_fields=changed_fields)
 
         return Response(AdminListingSerializer(listing).data)
 
@@ -380,11 +411,17 @@ class AdminListingDeleteView(APIView):
         listing = Listing.objects.filter(pk=pk).first()
 
         if not listing:
-            return Response({"detail": "Listing not found."}, status=404)
+            return Response(
+                {"detail": "Listing not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         listing.delete()
 
-        return Response({"detail": "Listing removed successfully."})
+        return Response(
+            {"detail": "Listing removed successfully."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class AdminOrderListView(generics.ListAPIView):
@@ -393,29 +430,30 @@ class AdminOrderListView(generics.ListAPIView):
 
     def get_queryset(self):
         return Order.objects.select_related(
-            "buyer", "listing", "listing__seller"
+            "buyer",
+            "listing",
+            "listing__seller",
         ).order_by("-created_at")
 
 
 class AdminOrderDetailView(generics.RetrieveAPIView):
     serializer_class = AdminOrderSerializer
     permission_classes = [IsAdminUserOnly]
-    queryset = Order.objects.select_related("buyer", "listing", "listing__seller").all()
+    queryset = Order.objects.select_related(
+        "buyer",
+        "listing",
+        "listing__seller",
+    ).all()
 
 
 class AdminPaymentListView(APIView):
     permission_classes = [IsAdminUserOnly]
 
     def get(self, request):
-        try:
-            payments = Payment.objects.select_related("order").order_by("-created_at")
-            serializer = AdminPaymentSerializer(payments, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response(
-                {
-                    "detail": "Payments could not be loaded.",
-                    "error": str(e),
-                },
-                status=status.HTTP_200_OK,
-            )
+        print("ADMIN PAYMENTS COUNT:", Payment.objects.count())
+        print("ADMIN PAYMENTS:", list(Payment.objects.all().values()))
+
+        payments = Payment.objects.select_related("order").order_by("-created_at")
+        serializer = AdminPaymentSerializer(payments, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
