@@ -43,6 +43,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Password must contain at least one special character."
             )
+
         return value
 
     def validate_email(self, value):
@@ -50,6 +51,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Only .edu email addresses are allowed to register."
             )
+
         return value
 
     def create(self, validated_data):
@@ -66,6 +68,18 @@ class UserSerializer(serializers.ModelSerializer):
             "verified",
             "trust_score",
             "is_new_user",
+            "is_staff",
+            "is_superuser",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "email",
+            "verified",
+            "trust_score",
+            "is_new_user",
+            "is_staff",
+            "is_superuser",
             "created_at",
         ]
 
@@ -109,4 +123,5 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"confirm_password": ["Passwords do not match."]}
             )
+
         return attrs
