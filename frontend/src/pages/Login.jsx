@@ -27,6 +27,7 @@ export default function Login() {
             }
 
             localStorage.setItem("accessToken", access);
+            api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
 
             if (refresh) {
                 localStorage.setItem("refreshToken", refresh);

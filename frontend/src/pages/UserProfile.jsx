@@ -17,24 +17,22 @@ export default function UserProfile() {
     loadProfileData();
   }, []);
 
-  async function loadProfileData() {
-    try {
-      setLoading(true);
-      setError("");
+ async function loadProfileData() {
+  try {
+    setLoading(true);
+    setError("");
 
-      const [meRes, listingsRes] = await Promise.all([
-        getMe(),
-        getListings({ mine: true }),
-      ]);
+    const meRes = await getMe();
+    setMe(meRes.data);
 
-      setMe(meRes.data);
-      setMyListings(listingsRes.data || []);
-    } catch {
-      setError("Could not load profile.");
-    } finally {
-      setLoading(false);
-    }
+    const listingsRes = await getListings({ seller: meRes.data.id });
+    setMyListings(listingsRes.data || []);
+  } catch {
+    setError("Could not load profile.");
+  } finally {
+    setLoading(false);
   }
+}
 
   function handleLogout() {
     logoutUser();

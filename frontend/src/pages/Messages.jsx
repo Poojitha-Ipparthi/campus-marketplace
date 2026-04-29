@@ -259,7 +259,7 @@ export default function Messages() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div style={{ flex: 1 }}>
                   <p className="chat-header-name">
-                    {activeConvData?.otherName || `User #${initReceiverId}`}
+                    {activeConvData?.otherName || activeListing?.seller_name || activeListing?.seller_email || `User #${initReceiverId}`}
                   </p>
 
                   {/* Listing card — shows item image, title, price, clickable */}

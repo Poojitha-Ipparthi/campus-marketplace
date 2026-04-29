@@ -58,8 +58,8 @@ class Order(models.Model):
         ):
             errors["buyer"] = "You cannot place an order on your own listing."
 
-        if self.offered_price is None or self.offered_price <= 0:
-            errors["offered_price"] = "Offered price must be greater than zero."
+        if self.offered_price is None or self.offered_price < 0:
+            errors["offered_price"] = "Offered price cannot be negative."
 
         # Enforce listing availability only when creating a new order
         if self._state.adding and self.listing_id:
