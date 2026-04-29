@@ -119,6 +119,70 @@ img {
   transform: translateY(-3px);
 }
 
+.listing-card-image-carousel {
+  position: relative;
+}
+
+.image-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 28px;
+  height: 28px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(0, 59, 112, 0.85);
+  color: white;
+
+  font-size: 22px;
+  font-weight: bold;
+  line-height: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 2;
+}
+
+.listing-card-image-carousel:hover .image-arrow {
+  opacity: 1;
+}
+
+.image-arrow:hover {
+  background: rgba(0, 47, 89, 0.95);
+}
+
+.image-arrow-left {
+  left: 8px;
+}
+
+.image-arrow-right {
+  right: 8px;
+}
+
+.image-count {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  padding: 3px 7px;
+  border-radius: 999px;
+  z-index: 2;
+}
+
 .image {
   height: 160px;
   background: #fff8e6;
@@ -314,6 +378,25 @@ img {
 }
 
 .btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-activate {
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-activate:hover {
+  background: #15803d;
+}
+
+.btn-activate:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

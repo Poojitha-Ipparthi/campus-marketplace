@@ -33,11 +33,6 @@ export default function LeaveReview() {
 
     load();
 
-    const interval = setInterval(() => {
-      load();
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [orderId]);
 
   async function handleSubmit(e) {

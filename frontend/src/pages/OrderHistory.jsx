@@ -32,34 +32,29 @@ export default function OrderHistory() {
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loadOrders = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+
+    if (!silent) setLoading(true);
+    if (!silent) setError("");
+
     try {
-      const [buyRes, sellRes, reviewRes] = await Promise.all([
+      const [buyRes, sellRes] = await Promise.all([
         api.get("/api/orders/"),
         api.get("/api/orders/?role=seller"),
-        api.get("/api/reviews/"),
       ]);
+
       setBuyingOrders(buyRes.data);
       setSellingOrders(sellRes.data);
-      // Track which orders already have a review
-      const reviewed = new Set(reviewRes.data.map((r) => r.order));
-      setReviewedOrderIds(reviewed);
     } catch {
-      setError("Could not load orders.");
+      if (!silent) setError("Could not load orders.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadOrders();
-    const interval = setInterval(() => {
-      loadOrders();
-    }, 3000);
-
-    return () => clearInterval(interval);
 
   }, [loadOrders]);
 

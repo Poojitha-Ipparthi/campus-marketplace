@@ -30,34 +30,38 @@ export default function OrderDetail() {
   const [hasReview, setHasReview] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const loadOrder = useCallback(async () => {
+  const loadOrder = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+
     try {
+      if (!silent) setLoading(true);
+      if (!silent) setError("");
+
       const [orderRes, userRes] = await Promise.all([
         api.get(`/api/orders/${id}/`),
         api.get("/api/auth/me/"),
       ]);
+
       setOrder(orderRes.data);
       setCurrentUser(userRes.data);
+
       if (orderRes.data.status === "COMPLETED") {
         try {
           const reviewRes = await api.get(`/api/reviews/?order=${id}`);
           setHasReview(reviewRes.data.length > 0);
-        } catch { setHasReview(false); }
+        } catch {
+          setHasReview(false);
+        }
       }
-    } catch { setError("Could not load order."); }
-    finally { setLoading(false); }
+    } catch {
+      if (!silent) setError("Could not load order.");
+    } finally {
+      if (!silent) setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => {
     loadOrder();
-
-    const interval = setInterval(() => {
-      if (!actionLoading) {
-        loadOrder();
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [loadOrder, actionLoading]);
 
   async function handleCancel() {

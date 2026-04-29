@@ -20,11 +20,6 @@ export default function Listings() {
     useEffect(() => {
         loadCategories();
         loadListings();
-        const interval = setInterval(() => {
-            loadListings();
-        }, 3000);
-
-        return () => clearInterval(interval);
     }, []);
 
     async function loadCategories() {
@@ -36,10 +31,12 @@ export default function Listings() {
         }
     }
 
-    async function loadListings(customParams = null) {
+    async function loadListings(customParams = null, options = {}) {
+        const { silent = false } = options;
+
         try {
-            setLoading(true);
-            setError("");
+            if (!silent) setLoading(true);
+            if (!silent) setError("");
 
             const params = {
                 status: "AVAILABLE",
@@ -57,11 +54,12 @@ export default function Listings() {
             const res = await getListings(params);
             setItems(Array.isArray(res.data) ? res.data : []);
         } catch {
-            setError("Could not load listings.");
+            if (!silent) setError("Could not load listings.");
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }
+
 
     function clearFilters() {
         setSearch("");

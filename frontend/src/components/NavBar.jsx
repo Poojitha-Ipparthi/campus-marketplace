@@ -32,8 +32,7 @@ export default function NavBar() {
     }
 
     fetchBadges();
-    const interval = setInterval(fetchBadges, 3000);
-    return () => clearInterval(interval);
+
   }, [isLoggedIn, location.pathname]);
 
   useEffect(() => {

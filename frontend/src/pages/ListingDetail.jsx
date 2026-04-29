@@ -18,26 +18,25 @@ export default function ListingDetail() {
 
   useEffect(() => {
     loadListing();
+
     api.get("/api/auth/me/")
       .then((res) => setCurrentUserId(res.data.id))
       .catch(() => { });
-    const interval = setInterval(() => {
-      loadListing();
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, [id]);
 
-  async function loadListing() {
+  async function loadListing(options = {}) {
+    const { silent = false } = options;
+
     try {
-      setLoading(true);
-      setError("");
+      if (!silent) setLoading(true);
+      if (!silent) setError("");
+
       const res = await getListing(id);
       setListing(res.data);
     } catch {
-      setError("Could not load listing details.");
+      if (!silent) setError("Could not load listing details.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 

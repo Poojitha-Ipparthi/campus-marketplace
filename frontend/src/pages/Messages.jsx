@@ -59,7 +59,7 @@ export default function Messages() {
 
       setConversations(convList);
     } catch {
-      setError("Could not load messages.");
+      if (loading) setError("Could not load messages.");
     } finally {
       setLoading(false);
     }

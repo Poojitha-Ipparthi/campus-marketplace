@@ -28,12 +28,7 @@ export default function PublicProfile() {
     }, [id, listings]);
 
     useEffect(() => {
-        loadPublicProfile();
-        const interval = setInterval(() => {
-            loadProfileData();
-        }, 3000);
-
-        return () => clearInterval(interval);
+        loadProfileData();
     }, [id]);
 
     async function loadPublicProfile() {
