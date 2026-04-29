@@ -21,11 +21,8 @@ from .serializers import (
     PasswordResetVerifyCodeSerializer,
     PasswordResetConfirmSerializer,
 )
-<<<<<<< HEAD
 from listings.models import Listing
 from orders.models import Order, Payment
-=======
->>>>>>> 7903beeadc31f4c1e250f9ce921aa27051fb945a
 from .admin_serializers import (
     AdminUserSerializer,
     AdminListingSerializer,
