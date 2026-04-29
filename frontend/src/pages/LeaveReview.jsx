@@ -21,7 +21,6 @@ export default function LeaveReview() {
         const orderData = orderRes.data;
         setOrder(orderData);
 
-        // Get seller ID from the listing
         const listingRes = await api.get(`/api/listings/${orderData.listing}/`);
         setSellerId(listingRes.data.seller);
         setSellerEmail(listingRes.data.seller_email || listingRes.data.seller_name || "");
@@ -31,7 +30,14 @@ export default function LeaveReview() {
         setLoading(false);
       }
     }
+
     load();
+
+    const interval = setInterval(() => {
+      load();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [orderId]);
 
   async function handleSubmit(e) {

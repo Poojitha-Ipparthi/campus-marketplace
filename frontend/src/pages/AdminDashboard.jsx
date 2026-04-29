@@ -25,14 +25,20 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadAdminData();
+        loadAdminData(true);
+
+        const interval = setInterval(() => {
+            loadAdminData(false);
+        }, 3000);
+
+        return () => clearInterval(interval);
     }, []);
 
-    async function loadAdminData() {
+    async function loadAdminData(clearMessage = false) {
         try {
             setLoading(true);
             setError("");
-            setMessage("");
+            if (clearMessage) setMessage("");
 
             const [statsRes, usersRes, listingsRes, ordersRes, paymentsRes] =
                 await Promise.allSettled([
@@ -48,12 +54,6 @@ export default function AdminDashboard() {
             if (listingsRes.status === "fulfilled") setListings(listingsRes.value.data || []);
             if (ordersRes.status === "fulfilled") setOrders(ordersRes.value.data || []);
             if (paymentsRes.status === "fulfilled") setPayments(paymentsRes.value.data || []);
-
-            // setStats(statsRes.data);
-            // setUsers(usersRes.data || []);
-            // setListings(listingsRes.data || []);
-            // setOrders(ordersRes.data || []);
-            // setPayments(paymentsRes.data || []);
         } catch (err) {
             setError(
                 err.response?.data?.detail ||

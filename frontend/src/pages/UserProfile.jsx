@@ -14,6 +14,11 @@ export default function UserProfile() {
 
   useEffect(() => {
     loadProfile();
+    const interval = setInterval(() => {
+      loadProfileData();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   async function loadProfile() {

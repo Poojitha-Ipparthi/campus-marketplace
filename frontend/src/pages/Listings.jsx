@@ -20,6 +20,11 @@ export default function Listings() {
     useEffect(() => {
         loadCategories();
         loadListings();
+        const interval = setInterval(() => {
+            loadListings();
+        }, 3000);
+
+        return () => clearInterval(interval);
     }, []);
 
     async function loadCategories() {

@@ -75,12 +75,28 @@ export default function Checkout() {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    api.get(`/api/orders/${orderId}/`)
-      .then((res) => setOrder(res.data))
-      .catch(() => setError("Could not load order."))
-      .finally(() => setLoading(false));
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [orderId]);
+    async function loadOrder() {
+      try {
+        const res = await api.get(`/api/orders/${orderId}/`);
+        setOrder(res.data);
+        setError("");
+      } catch {
+        setError("Could not load order.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadOrder();
+
+    const interval = setInterval(() => {
+      if (!paying && !success) {
+        loadOrder();
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [orderId, paying, success]);
 
   function handleSuccess() {
     setSuccess(true);

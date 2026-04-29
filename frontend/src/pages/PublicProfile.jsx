@@ -29,6 +29,11 @@ export default function PublicProfile() {
 
     useEffect(() => {
         loadPublicProfile();
+        const interval = setInterval(() => {
+            loadProfileData();
+        }, 3000);
+
+        return () => clearInterval(interval);
     }, [id]);
 
     async function loadPublicProfile() {

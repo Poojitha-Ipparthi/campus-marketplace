@@ -20,7 +20,12 @@ export default function ListingDetail() {
     loadListing();
     api.get("/api/auth/me/")
       .then((res) => setCurrentUserId(res.data.id))
-      .catch(() => {});
+      .catch(() => { });
+    const interval = setInterval(() => {
+      loadListing();
+    }, 3000);
+
+    return () => clearInterval(interval);
   }, [id]);
 
   async function loadListing() {

@@ -3,19 +3,19 @@ import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom"
 import { api } from "../api/client";
 
 const BUYER_INFO = {
-  PENDING:   { label: "Awaiting Seller Response", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "Your order has been placed! The seller will review and accept or decline it.", icon: "⏳" },
-  ACCEPTED:  { label: "Accepted — Payment Required", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "Great news! The seller accepted your order. Please complete your payment to secure the item.", icon: "✅" },
+  PENDING: { label: "Awaiting Seller Response", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "Your order has been placed! The seller will review and accept or decline it.", icon: "⏳" },
+  ACCEPTED: { label: "Accepted — Payment Required", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "Great news! The seller accepted your order. Please complete your payment to secure the item.", icon: "✅" },
   COMPLETED: { label: "Order Complete", color: "#16a34a", bg: "#f0fdf4", border: "#86efac", message: "This transaction is complete. Thank you for using Campus Marketplace!", icon: "🎉" },
   CANCELLED: { label: "Order Cancelled", color: "#dc2626", bg: "#fef2f2", border: "#fca5a5", message: "This order was cancelled.", icon: "❌" },
-  REJECTED:  { label: "Declined by Seller", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "The seller declined this order. The item may no longer be available.", icon: "🚫" },
+  REJECTED: { label: "Declined by Seller", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "The seller declined this order. The item may no longer be available.", icon: "🚫" },
 };
 
 const SELLER_INFO = {
-  PENDING:   { label: "New Order — Action Required", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "A buyer wants to purchase this item. Accept to reserve it for them, or decline.", icon: "📦" },
-  ACCEPTED:  { label: "Accepted — Awaiting Payment", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "You accepted this order. The buyer has 24 hours to complete payment.", icon: "⏳" },
+  PENDING: { label: "New Order — Action Required", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "A buyer wants to purchase this item. Accept to reserve it for them, or decline.", icon: "📦" },
+  ACCEPTED: { label: "Accepted — Awaiting Payment", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "You accepted this order. The buyer has 24 hours to complete payment.", icon: "⏳" },
   COMPLETED: { label: "Order Complete", color: "#16a34a", bg: "#f0fdf4", border: "#86efac", message: "This transaction is complete. Great job!", icon: "🎉" },
   CANCELLED: { label: "Order Cancelled", color: "#dc2626", bg: "#fef2f2", border: "#fca5a5", message: "This order was cancelled. The listing is available again.", icon: "❌" },
-  REJECTED:  { label: "Order Declined", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "You declined this order.", icon: "🚫" },
+  REJECTED: { label: "Order Declined", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "You declined this order.", icon: "🚫" },
 };
 
 export default function OrderDetail() {
@@ -48,7 +48,17 @@ export default function OrderDetail() {
     finally { setLoading(false); }
   }, [id]);
 
-  useEffect(() => { loadOrder(); }, [loadOrder]);
+  useEffect(() => {
+    loadOrder();
+
+    const interval = setInterval(() => {
+      if (!actionLoading) {
+        loadOrder();
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [loadOrder, actionLoading]);
 
   async function handleCancel() {
     if (!window.confirm("Cancel this order?")) return;

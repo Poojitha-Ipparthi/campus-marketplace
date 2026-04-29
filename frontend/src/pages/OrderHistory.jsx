@@ -53,7 +53,15 @@ export default function OrderHistory() {
     }
   }, []);
 
-  useEffect(() => { loadOrders(); }, [loadOrders]);
+  useEffect(() => {
+    loadOrders();
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 3000);
+
+    return () => clearInterval(interval);
+
+  }, [loadOrders]);
 
   async function handleAccept(orderId, listingTitle) {
     setActionLoading(orderId);
