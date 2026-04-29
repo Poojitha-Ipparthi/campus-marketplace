@@ -5,12 +5,14 @@ from .views import (
     ListingListCreateView,
     ListingDetailView,
     upload_listing_image,
+    delete_listing_image,
 )
 
 urlpatterns = [
     path("", ListingListCreateView.as_view(), name="listing-list-create"),
     path("<int:pk>/", ListingDetailView.as_view(), name="listing-detail"),
     path("<int:pk>/upload-image/", upload_listing_image, name="upload-listing-image"),
+    path("<int:pk>/images/<int:image_id>/", delete_listing_image, name="delete-listing-image"),
     path("categories/", CategoryListView.as_view(), name="category-list"),
     path("categories/<int:pk>/", CategoryDetailView.as_view(), name="category-detail"),
 ]

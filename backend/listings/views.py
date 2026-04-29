@@ -153,3 +153,47 @@ def upload_listing_image(request, pk):
             {"detail": "Image upload failed. Please try again."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+@api_view(["DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def delete_listing_image(request, pk, image_id):
+    try:
+        listing = Listing.objects.get(pk=pk, seller=request.user)
+    except Listing.DoesNotExist:
+        return Response(
+            {"detail": "Listing not found or you are not the seller."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    try:
+        image = ListingImage.objects.get(pk=image_id, listing=listing)
+    except ListingImage.DoesNotExist:
+        return Response(
+            {"detail": "Image not found."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    # Delete from Firebase
+    try:
+        from firebase_admin import storage
+        url = image.image_url
+        if "firebasestorage" in url:
+            path = url.split("/o/")[1].split("?")[0]
+            import urllib.parse
+            path = urllib.parse.unquote(path)
+            bucket = storage.bucket()
+            blob = bucket.blob(path)
+            blob.delete()
+    except Exception:
+        pass  # Don't fail if Firebase delete fails
+
+    image.delete()
+
+    try:
+        from django.core.cache import cache
+        cache.delete("listings_all_ids")
+        cache.delete("listings_all")
+    except Exception:
+        pass
+
+    return Response({"detail": "Image deleted."}, status=status.HTTP_200_OK)

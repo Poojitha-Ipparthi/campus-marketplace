@@ -17,30 +17,29 @@ export default function Messages() {
   const [error, setError] = useState("");
   const messagesEndRef = useRef(null);
   const pollRef = useRef(null);
+  const prevMsgCountRef = useRef(0);
 
-  // Load current user
   useEffect(() => {
     api.get("/api/auth/me/")
       .then((res) => setCurrentUser(res.data))
       .catch(() => {});
   }, []);
 
-  // Fetch all messages and build conversation list
   const fetchMessages = useCallback(async () => {
     try {
       const res = await api.get("/api/messages/");
       const msgs = res.data;
       setAllMessages(msgs);
 
-      // Group messages into conversations by (listing + other user)
       const convMap = {};
       msgs.forEach((msg) => {
-        const key = `${msg.listing}-${msg.sender === currentUser?.id ? msg.receiver : msg.sender}`;
+        const otherId = msg.sender === currentUser?.id ? msg.receiver : msg.sender;
+        const key = `${msg.listing}-${otherId}`;
         if (!convMap[key]) {
           convMap[key] = {
             key,
             listingId: msg.listing,
-            otherId: msg.sender === currentUser?.id ? msg.receiver : msg.sender,
+            otherId,
             otherEmail: msg.sender === currentUser?.id ? msg.receiver_email : msg.sender_email,
             messages: [],
             unread: 0,
@@ -59,52 +58,56 @@ export default function Messages() {
       });
 
       setConversations(convList);
-
-      // Auto-open conversation from URL params
-      if (initListingId && initReceiverId && convList.length > 0 && !activeConv) {
-        const match = convList.find(
-          (c) => String(c.listingId) === initListingId && String(c.otherId) === initReceiverId
-        );
-        if (match) setActiveConv(match.key);
-      }
     } catch {
       setError("Could not load messages.");
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.id, initListingId, initReceiverId, activeConv]);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (!currentUser) return;
     fetchMessages();
-    // Poll every 5 seconds for new messages
     pollRef.current = setInterval(fetchMessages, 2000);
     return () => clearInterval(pollRef.current);
-  }, [currentUser]);
+  }, [currentUser, fetchMessages]);
 
-  // Auto-scroll only when new message arrives, not on every poll
-  const prevMsgCountRef = useRef(0);
+  // Auto-open from URL params
   useEffect(() => {
-    const activeConvData = conversations.find((c) => c.key === activeConv);
-    const count = activeConvData?.messages?.length || 0;
+    if (!initListingId || !initReceiverId || !currentUser) return;
+    const key = `${initListingId}-${initReceiverId}`;
+    setActiveConv(key);
+  }, [initListingId, initReceiverId, currentUser]);
+
+  // Mark messages as read when conversation is opened
+  useEffect(() => {
+    if (!activeConv || !currentUser) return;
+    const conv = conversations.find((c) => c.key === activeConv);
+    if (!conv) return;
+
+    const unreadMsgs = conv.messages.filter(
+      (m) => !m.is_read && m.receiver === currentUser.id
+    );
+
+    unreadMsgs.forEach((msg) => {
+      api.patch(`/api/messages/${msg.id}/read/`).catch(() => {});
+    });
+  }, [activeConv, conversations, currentUser]);
+
+  // Auto-scroll only on new messages
+  useEffect(() => {
+    const conv = conversations.find((c) => c.key === activeConv);
+    const count = conv?.messages?.length || 0;
     if (count > prevMsgCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
     prevMsgCountRef.current = count;
   }, [allMessages, conversations, activeConv]);
 
-  // Scroll to bottom immediately when switching conversations
+  // Scroll to bottom when switching conversations
   useEffect(() => {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 30);
   }, [activeConv]);
-
-  // If URL params but no existing conversation — set up new chat
-  useEffect(() => {
-    if (initListingId && initReceiverId && currentUser && conversations.length === 0 && !loading) {
-      const newKey = `${initListingId}-${initReceiverId}`;
-      setActiveConv(newKey);
-    }
-  }, [initListingId, initReceiverId, currentUser, conversations, loading]);
 
   async function handleSend(e) {
     e.preventDefault();
@@ -141,8 +144,6 @@ export default function Messages() {
 
   const activeConvData = conversations.find((c) => c.key === activeConv);
   const activeMessages = activeConvData?.messages || [];
-
-  // If coming from URL params with no existing conv, show empty chat ready to type
   const isNewChat = initListingId && initReceiverId && !activeConvData && activeConv;
 
   if (loading) return <div className="container"><p>Loading messages...</p></div>;
@@ -151,9 +152,7 @@ export default function Messages() {
     <div className="messaging-layout">
       {/* LEFT: Conversation List */}
       <div className="conversations-panel">
-        <div className="conversations-header">
-          💬 Messages
-        </div>
+        <div className="conversations-header">💬 Messages</div>
 
         <div className="conversations-list">
           {conversations.length === 0 && !isNewChat && (
@@ -164,7 +163,7 @@ export default function Messages() {
 
           {isNewChat && (
             <div
-              className={`conversation-item active`}
+              className="conversation-item active"
               onClick={() => setActiveConv(`${initListingId}-${initReceiverId}`)}
             >
               <p className="conversation-name">New Conversation</p>
@@ -185,7 +184,7 @@ export default function Messages() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <p className="conversation-name">
                     {conv.otherEmail || `User #${conv.otherId}`}
-                    {conv.unread > 0 && (
+                    {conv.unread > 0 && !isActive && (
                       <span className="conversation-unread">{conv.unread}</span>
                     )}
                   </p>
@@ -193,9 +192,7 @@ export default function Messages() {
                     {lastMsg ? new Date(lastMsg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
                   </span>
                 </div>
-                <p className="conversation-listing">
-                  Re: Listing #{conv.listingId}
-                </p>
+                <p className="conversation-listing">Re: Listing #{conv.listingId}</p>
                 <p className="conversation-preview">
                   {lastMsg
                     ? `${lastMsg.sender === currentUser?.id ? "You: " : ""}${lastMsg.content}`
@@ -226,19 +223,35 @@ export default function Messages() {
           <>
             {/* Chat Header */}
             <div className="chat-header">
-              <p className="chat-header-name">
-                {activeConvData?.otherEmail || `User #${initReceiverId}`}
-              </p>
-              <p className="chat-header-listing">
-                Re: Listing #{activeConvData?.listingId || initListingId}
-                {" · "}
-                <Link
-                  to={`/listings/${activeConvData?.listingId || initListingId}`}
-                  style={{ color: "#003b70", fontSize: "12px" }}
-                >
-                  View listing
-                </Link>
-              </p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <p className="chat-header-name">
+                    {activeConvData?.otherEmail || `User #${initReceiverId}`}
+                  </p>
+                  <p className="chat-header-listing">
+                    Re: Listing #{activeConvData?.listingId || initListingId}
+                    {" · "}
+                    <Link
+                      to={`/listings/${activeConvData?.listingId || initListingId}`}
+                      style={{ color: "#003b70", fontSize: "12px" }}
+                    >
+                      View listing
+                    </Link>
+                  </p>
+                </div>
+                {/* Report link */}
+                {activeConvData?.otherId && (
+                  <Link
+                    to={`/report?user=${activeConvData.otherId}&listing=${activeConvData.listingId}`}
+                    style={{
+                      fontSize: "12px", color: "#9ca3af",
+                      textDecoration: "underline", flexShrink: 0,
+                    }}
+                  >
+                    Report User
+                  </Link>
+                )}
+              </div>
             </div>
 
             {/* Messages */}
@@ -252,32 +265,23 @@ export default function Messages() {
               {activeMessages.map((msg) => {
                 const isMe = msg.sender === currentUser?.id;
                 return (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: isMe ? "flex-end" : "flex-start",
-                    }}
-                  >
+                  <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
                     <div style={{
-                      maxWidth: "70%",
-                      padding: "10px 14px",
+                      maxWidth: "70%", padding: "10px 14px",
                       borderRadius: isMe ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                       background: isMe ? "#003b70" : "white",
                       color: isMe ? "white" : "#111",
                       boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
                       border: isMe ? "none" : "1px solid #e5e7eb",
                     }}>
-                      <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.4" }}>
-                        {msg.content}
-                      </p>
-                      <p style={{
-                        margin: "4px 0 0",
-                        fontSize: "11px",
-                        opacity: 0.65,
-                        textAlign: "right",
-                      }}>
+                      <p style={{ margin: 0, fontSize: "14px", lineHeight: "1.4" }}>{msg.content}</p>
+                      <p style={{ margin: "4px 0 0", fontSize: "11px", opacity: 0.65, textAlign: "right" }}>
                         {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {isMe && (
+                          <span style={{ marginLeft: "4px" }}>
+                            {/* Show read receipt for sent messages */}
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -297,11 +301,8 @@ export default function Messages() {
                 onKeyDown={handleKeyDown}
                 autoFocus
               />
-              <button
-                type="submit"
-                className="chat-send-btn"
-                disabled={sending || !content.trim()}
-              >
+              <button type="submit" className="chat-send-btn"
+                disabled={sending || !content.trim()}>
                 {sending ? "⏳" : "➤"}
               </button>
             </form>

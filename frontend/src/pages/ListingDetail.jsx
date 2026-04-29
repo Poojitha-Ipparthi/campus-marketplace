@@ -14,6 +14,7 @@ export default function ListingDetail() {
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   useEffect(() => {
     loadListing();
@@ -75,7 +76,8 @@ export default function ListingDetail() {
     );
   }
 
-  const imageUrl = listing.images?.[0]?.image_url;
+  const images = listing.images || [];
+  const activeImage = images[activeImageIndex]?.image_url || null;
   const isOwner = currentUserId && listing.seller === currentUserId;
   const isAvailable = listing.status === "AVAILABLE";
   const isLoggedIn = Boolean(localStorage.getItem("accessToken"));
@@ -83,14 +85,48 @@ export default function ListingDetail() {
 
   return (
     <main className="container detail-page">
-      <Link className="back-link" to="/listings">
-        ← Back to listings
-      </Link>
+      <Link className="back-link" to="/listings">← Back to listings</Link>
 
       <section className="marketplace-detail-card">
+        {/* Main image */}
         <div className="marketplace-detail-image">
-          {imageUrl ? <img src={imageUrl} alt={listing.title} /> : "📦"}
+          {activeImage ? (
+            <img src={activeImage} alt={listing.title} />
+          ) : (
+            <span style={{ fontSize: "80px" }}>📦</span>
+          )}
         </div>
+
+        {/* Image thumbnails — only show if more than 1 image */}
+        {images.length > 1 && (
+          <div style={{
+            display: "flex", gap: "8px", padding: "12px 20px",
+            overflowX: "auto", background: "#f8fafc",
+            borderBottom: "1px solid #e5e7eb",
+          }}>
+            {images.map((img, index) => (
+              <button
+                key={img.id}
+                onClick={() => setActiveImageIndex(index)}
+                style={{
+                  border: activeImageIndex === index ? "2px solid #003b70" : "2px solid transparent",
+                  borderRadius: "6px", padding: 0, cursor: "pointer",
+                  background: "none", flexShrink: 0,
+                }}
+              >
+                <img
+                  src={img.image_url}
+                  alt={`View ${index + 1}`}
+                  style={{
+                    width: "60px", height: "60px",
+                    objectFit: "cover", borderRadius: "4px",
+                    display: "block",
+                  }}
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="marketplace-detail-info">
           <h1>{listing.title}</h1>
@@ -123,18 +159,15 @@ export default function ListingDetail() {
           {orderError && <p className="error">{orderError}</p>}
 
           <div style={{
-            display: "flex",
-            gap: "12px",
-            marginTop: "20px",
-            flexWrap: "wrap",
-            alignItems: "center",
+            display: "flex", gap: "12px", marginTop: "20px",
+            flexWrap: "wrap", alignItems: "center",
           }}>
             {/* OWNER: manage listing */}
             {isOwner && (
               <>
                 <Link
                   to={`/listings/${id}/edit`}
-                  className="auth-button"
+                  className="btn-secondary"
                   style={{ display: "inline-block", textDecoration: "none", textAlign: "center" }}
                 >
                   ✏️ Edit Listing
@@ -181,6 +214,18 @@ export default function ListingDetail() {
                 style={{ display: "inline-block", textDecoration: "none", textAlign: "center" }}
               >
                 View Seller Profile
+              </Link>
+            )}
+
+            {!isOwner && isLoggedIn && (
+              <Link
+                to={`/report?listing=${id}&user=${listing.seller}`}
+                style={{
+                  fontSize: "12px", color: "#9ca3af",
+                  textDecoration: "underline", alignSelf: "center",
+                }}
+              >
+                Report Listing
               </Link>
             )}
 
