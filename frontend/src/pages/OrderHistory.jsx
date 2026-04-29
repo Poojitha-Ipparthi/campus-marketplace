@@ -4,18 +4,15 @@ import { api } from "../api/client";
 
 function Toast({ message, onClose }) {
   useEffect(() => {
-    const t = setTimeout(onClose, 4000);
+    const t = setTimeout(onClose, 3000);
     return () => clearTimeout(t);
   }, [onClose]);
-
   return (
     <div style={{
       position: "fixed", top: "80px", right: "24px", zIndex: 1000,
-      background: "#003b70", color: "white",
-      padding: "14px 20px", borderRadius: "12px",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+      background: "#003b70", color: "white", padding: "14px 20px",
+      borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
       fontSize: "14px", maxWidth: "320px",
-      animation: "slideIn 0.3s ease",
     }}>
       <p style={{ margin: 0, fontWeight: "700" }}>✅ {message}</p>
       <p style={{ margin: "4px 0 0", fontSize: "12px", opacity: 0.85 }}>
@@ -29,6 +26,7 @@ export default function OrderHistory() {
   const [tab, setTab] = useState("buying");
   const [buyingOrders, setBuyingOrders] = useState([]);
   const [sellingOrders, setSellingOrders] = useState([]);
+  const [reviewedOrderIds, setReviewedOrderIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
@@ -38,12 +36,16 @@ export default function OrderHistory() {
     setLoading(true);
     setError("");
     try {
-      const [buyRes, sellRes] = await Promise.all([
+      const [buyRes, sellRes, reviewRes] = await Promise.all([
         api.get("/api/orders/"),
         api.get("/api/orders/?role=seller"),
+        api.get("/api/reviews/"),
       ]);
       setBuyingOrders(buyRes.data);
       setSellingOrders(sellRes.data);
+      // Track which orders already have a review
+      const reviewed = new Set(reviewRes.data.map((r) => r.order));
+      setReviewedOrderIds(reviewed);
     } catch {
       setError("Could not load orders.");
     } finally {
@@ -61,22 +63,18 @@ export default function OrderHistory() {
       setToast(`Order accepted for "${listingTitle}"`);
     } catch (err) {
       alert(err.response?.data?.detail || "Could not accept order.");
-    } finally {
-      setActionLoading(null);
-    }
+    } finally { setActionLoading(null); }
   }
 
   async function handleReject(orderId) {
-    if (!window.confirm("Decline this order? The buyer will be notified.")) return;
+    if (!window.confirm("Decline this order?")) return;
     setActionLoading(orderId);
     try {
       await api.post(`/api/orders/${orderId}/reject/`);
       await loadOrders();
     } catch (err) {
       alert(err.response?.data?.detail || "Could not decline order.");
-    } finally {
-      setActionLoading(null);
-    }
+    } finally { setActionLoading(null); }
   }
 
   async function handleComplete(orderId) {
@@ -87,17 +85,12 @@ export default function OrderHistory() {
       await loadOrders();
     } catch (err) {
       alert(err.response?.data?.detail || "Could not complete order.");
-    } finally {
-      setActionLoading(null);
-    }
+    } finally { setActionLoading(null); }
   }
 
   const STATUS_COLORS = {
-    PENDING: "#d97706",
-    ACCEPTED: "#2563eb",
-    COMPLETED: "#16a34a",
-    CANCELLED: "#dc2626",
-    REJECTED: "#6b7280",
+    PENDING: "#d97706", ACCEPTED: "#2563eb",
+    COMPLETED: "#16a34a", CANCELLED: "#dc2626", REJECTED: "#6b7280",
   };
 
   const pendingSellerOrders = sellingOrders.filter((o) => o.status === "PENDING").length;
@@ -109,30 +102,18 @@ export default function OrderHistory() {
   return (
     <div className="container">
       {toast && <Toast message={toast} onClose={() => setToast(null)} />}
-
       <h1 className="form-title">Orders</h1>
 
-      {/* Tabs */}
       <div className="tabs">
-        <button
-          className={`tab-btn ${tab === "buying" ? "active" : ""}`}
-          onClick={() => setTab("buying")}
-        >
+        <button className={`tab-btn ${tab === "buying" ? "active" : ""}`} onClick={() => setTab("buying")}>
           Buying
           {buyingOrders.filter(o => o.status === "ACCEPTED").length > 0 && (
-            <span className="tab-badge">
-              {buyingOrders.filter(o => o.status === "ACCEPTED").length}
-            </span>
+            <span className="tab-badge">{buyingOrders.filter(o => o.status === "ACCEPTED").length}</span>
           )}
         </button>
-        <button
-          className={`tab-btn ${tab === "selling" ? "active" : ""}`}
-          onClick={() => setTab("selling")}
-        >
+        <button className={`tab-btn ${tab === "selling" ? "active" : ""}`} onClick={() => setTab("selling")}>
           Selling
-          {pendingSellerOrders > 0 && (
-            <span className="tab-badge">{pendingSellerOrders}</span>
-          )}
+          {pendingSellerOrders > 0 && <span className="tab-badge">{pendingSellerOrders}</span>}
         </button>
       </div>
 
@@ -156,20 +137,16 @@ export default function OrderHistory() {
             <div key={order.id} className="order-card"
               style={{ flexDirection: "column", alignItems: "stretch", gap: "14px" }}>
 
-              {/* Top row: info + status */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
                   <p className="order-title">
-                    <Link to={`/listings/${order.listing}`}
-                      style={{ color: "#003b70", textDecoration: "none" }}>
+                    <Link to={`/listings/${order.listing}`} style={{ color: "#003b70", textDecoration: "none" }}>
                       {order.listing_title || `Listing #${order.listing}`}
                     </Link>
                   </p>
                   <p className="order-meta">Order #{order.id} · {new Date(order.created_at).toLocaleDateString()}</p>
                   {tab === "selling" && (
-                    <p className="order-meta">
-                      <strong>Buyer:</strong> {order.buyer_email || `User #${order.buyer}`}
-                    </p>
+                    <p className="order-meta"><strong>Buyer:</strong> {order.buyer_email || `User #${order.buyer}`}</p>
                   )}
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -181,25 +158,21 @@ export default function OrderHistory() {
                 </div>
               </div>
 
-              {/* SELLER action buttons */}
+              {/* SELLER actions */}
               {tab === "selling" && (
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                   {order.status === "PENDING" && (
                     <>
-                      <button
-                        className="auth-button"
+                      <button className="auth-button"
                         style={{ width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px" }}
                         onClick={() => handleAccept(order.id, order.listing_title)}
-                        disabled={actionLoading === order.id}
-                      >
+                        disabled={actionLoading === order.id}>
                         {actionLoading === order.id ? "..." : "✓ Accept"}
                       </button>
-                      <button
-                        className="btn-danger"
+                      <button className="btn-danger"
                         style={{ padding: "8px 20px", fontSize: "14px" }}
                         onClick={() => handleReject(order.id)}
-                        disabled={actionLoading === order.id}
-                      >
+                        disabled={actionLoading === order.id}>
                         {actionLoading === order.id ? "..." : "✕ Decline"}
                       </button>
                     </>
@@ -209,12 +182,10 @@ export default function OrderHistory() {
                       <p style={{ fontSize: "13px", color: "#2563eb", margin: "0 auto 0 0", alignSelf: "center" }}>
                         ⏳ Awaiting buyer payment
                       </p>
-                      <button
-                        className="auth-button"
+                      <button className="auth-button"
                         style={{ width: "auto", marginTop: 0, padding: "8px 20px", fontSize: "14px" }}
                         onClick={() => handleComplete(order.id)}
-                        disabled={actionLoading === order.id}
-                      >
+                        disabled={actionLoading === order.id}>
                         {actionLoading === order.id ? "..." : "Mark Complete"}
                       </button>
                     </>
@@ -226,7 +197,7 @@ export default function OrderHistory() {
                 </div>
               )}
 
-              {/* BUYER action buttons */}
+              {/* BUYER actions */}
               {tab === "buying" && (
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                   <Link to={`/orders/${order.id}`} className="btn-secondary"
@@ -239,11 +210,17 @@ export default function OrderHistory() {
                       💳 Pay Now
                     </Link>
                   )}
-                  {order.status === "COMPLETED" && (
+                  {/* Leave Review — only if completed AND not yet reviewed */}
+                  {order.status === "COMPLETED" && !reviewedOrderIds.has(order.id) && (
                     <Link to={`/reviews/create/${order.id}`} className="btn-secondary"
                       style={{ padding: "8px 20px", fontSize: "14px", textDecoration: "none" }}>
                       ⭐ Leave Review
                     </Link>
+                  )}
+                  {order.status === "COMPLETED" && reviewedOrderIds.has(order.id) && (
+                    <span style={{ fontSize: "13px", color: "#16a34a", alignSelf: "center", fontWeight: "600" }}>
+                      ✓ Reviewed
+                    </span>
                   )}
                 </div>
               )}

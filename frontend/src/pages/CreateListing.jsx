@@ -103,8 +103,18 @@ export default function CreateListing() {
 
           <label className="label">
             Price ($)
-            <input className="input full-input" type="number" value={price}
-              placeholder="0.00" min="0" step="0.01" onChange={(e) => setPrice(e.target.value)} required />
+            <input
+              className="input full-input"
+              type="text"
+              inputMode="decimal"
+              value={price}
+              placeholder="0.00"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) setPrice(val);
+              }}
+              required
+            />
           </label>
 
           <label className="label">

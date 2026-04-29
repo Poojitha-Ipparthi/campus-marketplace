@@ -78,14 +78,25 @@ export default function Messages() {
     if (!currentUser) return;
     fetchMessages();
     // Poll every 5 seconds for new messages
-    pollRef.current = setInterval(fetchMessages, 5000);
+    pollRef.current = setInterval(fetchMessages, 2000);
     return () => clearInterval(pollRef.current);
   }, [currentUser]);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll only when new message arrives, not on every poll
+  const prevMsgCountRef = useRef(0);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeConv, allMessages]);
+    const activeConvData = conversations.find((c) => c.key === activeConv);
+    const count = activeConvData?.messages?.length || 0;
+    if (count > prevMsgCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMsgCountRef.current = count;
+  }, [allMessages, conversations, activeConv]);
+
+  // Scroll to bottom immediately when switching conversations
+  useEffect(() => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "auto" }), 30);
+  }, [activeConv]);
 
   // If URL params but no existing conversation — set up new chat
   useEffect(() => {
