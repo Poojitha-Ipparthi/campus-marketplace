@@ -123,11 +123,13 @@ export default function Messages() {
   }, [activeConv, conversations, currentUser]);
 
   // Auto-scroll only when new message arrives
+  // Also clear any block errors when new messages come in
   useEffect(() => {
     const conv = conversations.find((c) => c.key === activeConv);
     const count = conv?.messages?.length || 0;
     if (count > prevMsgCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setError("");
     }
     prevMsgCountRef.current = count;
   }, [allMessages, conversations, activeConv]);
@@ -140,6 +142,7 @@ export default function Messages() {
   async function handleSend(e) {
     e.preventDefault();
     if (!content.trim()) return;
+    setError(""); // Clear any previous error before trying
 
     const conv = conversations.find((c) => c.key === activeConv);
     const listingId = conv?.listingId || initListingId;
@@ -313,17 +316,40 @@ export default function Messages() {
                       </Link>
                       <button
                         onClick={async () => {
-                          if (!window.confirm("Block this user? They won't be able to message you.")) return;
                           try {
-                            await api.post("/api/reporting/blocks/", { blocked: activeConvData.otherId });
-                            alert("User blocked.");
+                            // Check if already blocked
+                            const blocksRes = await api.get("/api/reporting/blocks/");
+                            const existingBlock = blocksRes.data.find(
+                              (b) => b.blocked === activeConvData.otherId
+                            );
+
+                            if (existingBlock) {
+                              // Already blocked — offer to unblock
+                              if (window.confirm("You have blocked this user. Unblock them to send messages?")) {
+                                await api.delete(`/api/reporting/blocks/${existingBlock.id}/`);
+                                setError("");
+                                alert("User unblocked successfully.");
+                              }
+                            } else {
+                              // Not blocked — block them
+                              if (window.confirm("Block this user? They won't be able to message you.")) {
+                                await api.post("/api/reporting/blocks/", { 
+                                  blocked: activeConvData.otherId 
+                                });
+                                setError("");
+                                alert("User blocked. They can no longer message you.");
+                              }
+                            }
                           } catch (err) {
-                            alert(err.response?.data?.detail || "Could not block user.");
+                            alert(err.response?.data?.detail || "Could not complete action.");
                           }
                         }}
-                        style={{ background: "none", border: "none", color: "#ef4444", fontSize: "12px", cursor: "pointer", textDecoration: "underline" }}
+                        style={{ 
+                          background: "none", border: "none", color: "#ef4444", 
+                          fontSize: "12px", cursor: "pointer", textDecoration: "underline" 
+                        }}
                       >
-                        Block
+                        Block/Unblock
                       </button>
                     </>
                   )}

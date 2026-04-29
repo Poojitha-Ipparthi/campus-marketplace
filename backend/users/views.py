@@ -17,7 +17,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
 )
 from listings.models import Listing
-from orders.models import Order
+from orders.models import Order, Payment
 from .admin_serializers import (
     AdminUserSerializer,
     AdminListingSerializer,

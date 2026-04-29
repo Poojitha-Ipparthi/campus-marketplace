@@ -15,7 +15,27 @@ class MessageListCreateView(generics.ListCreateAPIView):
         )
 
     def perform_create(self, serializer):
-        serializer.save(sender=self.request.user)
+        from reporting.models import BlockedUser
+        receiver = serializer.validated_data.get("receiver")
+        sender = self.request.user
+        
+        # Blocked person cannot message blocker
+        if BlockedUser.objects.filter(
+            blocker=receiver,
+            blocked=sender
+        ).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You cannot send messages to this user.")
+        
+        # Blocker cannot message blocked person either
+        if BlockedUser.objects.filter(
+            blocker=sender,
+            blocked=receiver
+        ).exists():
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("You have blocked this user. Unblock them to send messages.")
+        
+        serializer.save(sender=sender)
 
 
 class MessageDetailView(generics.RetrieveAPIView):

@@ -345,7 +345,7 @@ def accept_order(request, pk):
                 )
 
             order.status = Order.Status.ACCEPTED
-            order.reserved_until = timezone.now() + timedelta(minutes=1)
+            order.reserved_until = timezone.now() + timedelta(minutes=3)
             order.save(update_fields=["status", "reserved_until", "updated_at"])
 
             listing.status = Listing.Status.RESERVED

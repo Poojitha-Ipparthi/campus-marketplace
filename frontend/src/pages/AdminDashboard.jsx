@@ -62,11 +62,11 @@ export default function AdminDashboard() {
                 setOrders(normalizeList(ordersRes.value.data));
             }
             if (paymentsRes.status === "fulfilled") {
-                console.log("PAYMENTS DATA:", paymentsRes.value.data);
+                // Backend returns plain array directly
                 const data = paymentsRes.value.data;
                 setPayments(Array.isArray(data) ? data : normalizeList(data));
-            } else{
-                console.log("PAYMENTS FAILED:", paymentsRes.reason);
+            } else {
+                console.error("Payments fetch failed:", paymentsRes.reason);
             }
         } catch (err) {
             setError(
