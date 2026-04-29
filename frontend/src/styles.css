@@ -311,3 +311,7 @@ img { max-width: 100%; display: block; }
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-table tr:hover td { background: #f8fafc; }
 
+/* Search + filter spacing fix */
+.filter-box {
+  margin-top: 16px;
+}

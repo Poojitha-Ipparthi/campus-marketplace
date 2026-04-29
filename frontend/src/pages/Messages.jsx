@@ -89,9 +89,13 @@ export default function Messages() {
       (m) => !m.is_read && m.receiver === currentUser.id
     );
 
-    unreadMsgs.forEach((msg) => {
-      api.patch(`/api/messages/${msg.id}/read/`).catch(() => {});
-    });
+    if (unreadMsgs.length > 0) {
+      Promise.all(unreadMsgs.map((msg) =>
+        api.patch(`/api/messages/${msg.id}/read/`).catch(() => {})
+      )).then(() => {
+        fetchMessages();
+      });
+    }
   }, [activeConv, conversations, currentUser]);
 
   // Auto-scroll only on new messages

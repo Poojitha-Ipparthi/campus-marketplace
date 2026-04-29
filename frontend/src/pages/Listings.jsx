@@ -61,11 +61,11 @@ export default function Listings() {
         setSearch("");
         setCategory("");
         setCondition("");
-        setStatus("");
+        setStatus("AVAILABLE");
         setMinPrice("");
         setMaxPrice("");
 
-        loadListings({});
+        loadListings({ status: "AVAILABLE" });
     }
 
     return (

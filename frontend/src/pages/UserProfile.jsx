@@ -55,13 +55,10 @@ export default function UserProfile() {
           <p>
             <strong>Items Sold:</strong> {soldCount}
           </p>
-          <p>
-            <strong>Items Bought:</strong> Use order history page.
-          </p>
         </div>
       </section>
 
-      <button className="button" type="button" onClick={handleLogout}>
+      <button className="button" type="button" onClick={handleLogout} style={{ background: "#fdb515", color: "#003b70" }}>
         Logout
       </button>
     </main>
