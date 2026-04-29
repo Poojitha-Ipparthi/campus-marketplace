@@ -5,6 +5,8 @@ from .models import Review
 class ReviewSerializer(serializers.ModelSerializer):
     reviewer_email = serializers.ReadOnlyField(source="reviewer.email")
     reviewee_email = serializers.ReadOnlyField(source="reviewee.email")
+    reviewer_name = serializers.ReadOnlyField(source="reviewer.full_name")
+    reviewee_name = serializers.ReadOnlyField(source="reviewee.full_name")
 
     class Meta:
         model = Review
@@ -12,8 +14,10 @@ class ReviewSerializer(serializers.ModelSerializer):
             "id",
             "reviewer",
             "reviewer_email",
+            "reviewer_name",
             "reviewee",
             "reviewee_email",
+            "reviewee_name",
             "order",
             "rating",
             "comment",

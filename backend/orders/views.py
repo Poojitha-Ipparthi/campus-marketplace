@@ -230,7 +230,7 @@ def accept_order(request, pk):
                 return Response({"detail": "Listing is not available for reservation."}, status=status.HTTP_409_CONFLICT)
 
             order.status = Order.Status.ACCEPTED
-            order.reserved_until = timezone.now() + timedelta(hours=24)
+            order.reserved_until = timezone.now() + timedelta(minutes=1)
             order.save(update_fields=["status", "reserved_until", "updated_at"])
             listing.status = Listing.Status.RESERVED
             listing.save(update_fields=["status"])
