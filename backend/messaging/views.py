@@ -35,5 +35,11 @@ class MarkMessageReadView(generics.UpdateAPIView):
     def get_queryset(self):
         return Message.objects.filter(receiver=self.request.user)
 
-    def perform_update(self, serializer):
-        serializer.save(is_read=True)
+    def partial_update(self, request, *args, **kwargs):
+        message = self.get_object()
+        message.is_read = True
+        message.save(update_fields=["is_read"])
+        return Response({"id": message.id, "is_read": True})
+
+    def update(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
