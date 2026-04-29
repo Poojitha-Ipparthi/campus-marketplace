@@ -251,6 +251,26 @@ export default function Messages() {
                     Report User
                   </Link>
                 )}
+                {activeConvData?.otherId && (
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm("Block this user? They won't be able to message you or order your listings.")) return;
+                      try {
+                        await api.post("/api/reporting/blocks/", { blocked: activeConvData.otherId });
+                        alert("User blocked successfully.");
+                      } catch (err) {
+                        alert(err.response?.data?.detail || "Could not block user.");
+                      }
+                    }}
+                    style={{
+                      background: "none", border: "none", color: "#ef4444",
+                      fontSize: "12px", cursor: "pointer",
+                      textDecoration: "underline", marginLeft: "12px",
+                    }}
+                  >
+                    Block User
+                  </button>
+                )}
               </div>
             </div>
 
