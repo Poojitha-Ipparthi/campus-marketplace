@@ -5,9 +5,11 @@ import { api } from "../api/client";
 export default function LeaveReview() {
   const { orderId } = useParams();
   const navigate = useNavigate();
+
   const [order, setOrder] = useState(null);
   const [sellerId, setSellerId] = useState(null);
-  const [sellerEmail, setSellerEmail] = useState("");
+  const [sellerName, setSellerName] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
@@ -17,13 +19,25 @@ export default function LeaveReview() {
   useEffect(() => {
     async function load() {
       try {
-        const orderRes = await api.get(`/api/orders/${orderId}/`);
+        const [orderRes, meRes] = await Promise.all([
+          api.get(`/api/orders/${orderId}/`),
+          api.get("/api/auth/me/"),
+        ]);
         const orderData = orderRes.data;
         setOrder(orderData);
+        setCurrentUser(meRes.data);
 
+<<<<<<< Updated upstream
+=======
+        // Get seller details from the listing
+>>>>>>> Stashed changes
         const listingRes = await api.get(`/api/listings/${orderData.listing}/`);
         setSellerId(listingRes.data.seller);
-        setSellerEmail(listingRes.data.seller_email || listingRes.data.seller_name || "");
+        setSellerName(
+          listingRes.data.seller_name ||
+          listingRes.data.seller_email ||
+          "the seller"
+        );
       } catch {
         setError("Could not load order details.");
       } finally {
@@ -68,6 +82,8 @@ export default function LeaveReview() {
   if (loading) return <div className="container"><p>Loading...</p></div>;
   if (!order) return <div className="container"><p className="error">{error}</p></div>;
 
+  const isBuyer = currentUser && order.buyer === currentUser.id;
+
   return (
     <div className="container">
       <Link to={`/orders/${orderId}`} className="back-link">← Back to Order</Link>
@@ -84,9 +100,9 @@ export default function LeaveReview() {
           <p style={{ margin: 0, fontWeight: "600", color: "#003b70" }}>
             {order.listing_title || `Order #${orderId}`}
           </p>
-          {sellerEmail && (
+          {sellerName && (
             <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#777" }}>
-              Seller: {sellerEmail}
+              Seller: <strong>{sellerName}</strong>
             </p>
           )}
         </div>
@@ -121,7 +137,7 @@ export default function LeaveReview() {
             <textarea
               className="input full-input"
               value={comment}
-              placeholder="How was your experience with this seller?"
+              placeholder={`How was your experience with ${sellerName || "this seller"}?`}
               onChange={(e) => setComment(e.target.value)}
               rows={4}
               style={{ marginTop: "8px" }}

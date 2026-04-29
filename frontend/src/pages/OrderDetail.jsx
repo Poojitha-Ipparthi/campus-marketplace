@@ -351,9 +351,15 @@ export default function OrderDetail() {
             )}
 
             {order.status === "COMPLETED" && hasReview && (
-              <p style={{ color: "#16a34a", fontWeight: "600", textAlign: "center" }}>
-                ✓ You've already reviewed this order.
-              </p>
+              <>
+                <p style={{ color: "#16a34a", fontWeight: "600", textAlign: "center" }}>
+                  ✓ You've already reviewed this order.
+                </p>
+                <Link to={messageUrl} className="btn-secondary"
+                  style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+                  💬 Message Seller
+                </Link>
+              </>
             )}
 
             {order.status === "REJECTED" && (
