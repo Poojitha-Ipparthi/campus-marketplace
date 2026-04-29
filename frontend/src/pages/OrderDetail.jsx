@@ -7,11 +7,11 @@ import { api } from "../api/client";
  * Each entry defines the visual style and user-facing message.
  */
 const BUYER_INFO = {
-  PENDING:   { label: "Awaiting Seller Response", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "Your order has been placed! The seller will review and accept or decline it.", icon: "⏳" },
-  ACCEPTED:  { label: "Accepted — Payment Required", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "Great news! The seller accepted your order. Please complete your payment to secure the item.", icon: "✅" },
+  PENDING: { label: "Awaiting Seller Response", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "Your order has been placed! The seller will review and accept or decline it.", icon: "⏳" },
+  ACCEPTED: { label: "Accepted — Payment Required", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "Great news! The seller accepted your order. Please complete your payment to secure the item.", icon: "✅" },
   COMPLETED: { label: "Order Complete", color: "#16a34a", bg: "#f0fdf4", border: "#86efac", message: "This transaction is complete. Thank you for using Campus Marketplace!", icon: "🎉" },
   CANCELLED: { label: "Order Cancelled", color: "#dc2626", bg: "#fef2f2", border: "#fca5a5", message: "This order was cancelled.", icon: "❌" },
-  REJECTED:  { label: "Declined by Seller", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "The seller declined this order. The item may no longer be available.", icon: "🚫" },
+  REJECTED: { label: "Declined by Seller", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "The seller declined this order. The item may no longer be available.", icon: "🚫" },
 };
 
 /*
@@ -20,9 +20,9 @@ const BUYER_INFO = {
 const SELLER_INFO = {
   PENDING:   { label: "New Order — Action Required", color: "#d97706", bg: "#fffbeb", border: "#fcd34d", message: "A buyer wants this item. Accept to reserve it for them, or decline.", icon: "📦" },
   ACCEPTED:  { label: "Accepted — Awaiting Payment", color: "#2563eb", bg: "#eff6ff", border: "#93c5fd", message: "You accepted this order. The buyer has 24 hours to complete payment.", icon: "⏳" },
-  COMPLETED: { label: "Order Complete", color: "#16a34a", bg: "#f0fdf4", border: "#86efac", message: "This transaction is complete. Well done!", icon: "🎉" },
+  COMPLETED: { label: "Order Complete", color: "#16a34a", bg: "#f0fdf4", border: "#86efac", message: "This transaction is complete. Thank you for using Campus Marketplace!", icon: "🎉" },
   CANCELLED: { label: "Order Cancelled", color: "#dc2626", bg: "#fef2f2", border: "#fca5a5", message: "This order was cancelled. The listing is available again.", icon: "❌" },
-  REJECTED:  { label: "Order Declined", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "You declined this order.", icon: "🚫" },
+  REJECTED: { label: "Order Declined", color: "#6b7280", bg: "#f9fafb", border: "#d1d5db", message: "You declined this order.", icon: "🚫" },
 };
 
 export default function OrderDetail() {
@@ -38,12 +38,18 @@ export default function OrderDetail() {
   const [hasReview, setHasReview] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const loadOrder = useCallback(async () => {
+  const loadOrder = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+
     try {
+      if (!silent) setLoading(true);
+      if (!silent) setError("");
+
       const [orderRes, userRes] = await Promise.all([
         api.get(`/api/orders/${id}/`),
         api.get("/api/auth/me/"),
       ]);
+
       setOrder(orderRes.data);
       setCurrentUser(userRes.data);
 
@@ -66,7 +72,9 @@ export default function OrderDetail() {
     }
   }, [id]);
 
-  useEffect(() => { loadOrder(); }, [loadOrder]);
+  useEffect(() => {
+    loadOrder();
+  }, [loadOrder, actionLoading]);
 
   // Cancel order — used by both buyer (PENDING/ACCEPTED) and seller (ACCEPTED only)
   async function handleCancel() {

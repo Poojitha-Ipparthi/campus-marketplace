@@ -10,29 +10,39 @@ export default function UserProfile() {
 
   const [me, setMe] = useState(null);
   const [myListings, setMyListings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    loadProfile();
+    loadProfileData();
   }, []);
 
-  async function loadProfile() {
+  async function loadProfileData() {
     try {
+      setLoading(true);
       setError("");
 
-      const userRes = await getMe();
-      setMe(userRes.data);
+      const [meRes, listingsRes] = await Promise.all([
+        getMe(),
+        getListings({ mine: true }),
+      ]);
 
-      const listingRes = await getListings({ seller: userRes.data.id });
-      setMyListings(Array.isArray(listingRes.data) ? listingRes.data : []);
+      setMe(meRes.data);
+      setMyListings(listingsRes.data || []);
     } catch {
-      setError("Could not load profile. Make sure you are logged in.");
+      setError("Could not load profile.");
+    } finally {
+      setLoading(false);
     }
   }
 
   function handleLogout() {
     logoutUser();
     navigate("/login");
+  }
+
+  if (loading) {
+    return <main className="container">Loading profile...</main>;
   }
 
   const soldCount = myListings.filter((x) => x.status === "SOLD").length;
@@ -58,7 +68,7 @@ export default function UserProfile() {
         </div>
       </section>
 
-      <button className="button" type="button" onClick={handleLogout} style={{ background: "#fdb515", color: "#003b70" }}>
+      <button className="button" type="button" onClick={handleLogout}>
         Logout
       </button>
     </main>

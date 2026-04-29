@@ -34,29 +34,52 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const isRefreshRequest = originalRequest.url?.includes("/api/auth/refresh/");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (error.response?.status === 401 && isRefreshRequest) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      localStorage.getItem("refreshToken")
+      refreshToken
     ) {
       originalRequest._retry = true;
 
       try {
-        const res = await api.post("/api/auth/refresh/", {
-          refresh: localStorage.getItem("refreshToken"),
+        const res = await axios.post("http://127.0.0.1:8000/api/auth/refresh/", {
+          refresh: refreshToken,
         });
 
         const newAccess = res.data.access;
-
         localStorage.setItem("accessToken", newAccess);
 
+        originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
 
         return api(originalRequest);
-      } catch {
+      } catch (refreshError) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
+
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+
+        return Promise.reject(refreshError);
       }
     }
 

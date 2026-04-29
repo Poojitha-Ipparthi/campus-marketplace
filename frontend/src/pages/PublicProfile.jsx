@@ -28,7 +28,7 @@ export default function PublicProfile() {
     }, [id, listings]);
 
     useEffect(() => {
-        loadPublicProfile();
+        loadProfileData();
     }, [id]);
 
     async function loadPublicProfile() {

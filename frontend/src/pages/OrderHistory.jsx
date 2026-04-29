@@ -38,9 +38,12 @@ export default function OrderHistory() {
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const loadOrders = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+
+    if (!silent) setLoading(true);
+    if (!silent) setError("");
+
     try {
       // Load buying orders, selling orders, reviews, and current user in parallel
       const [buyRes, sellRes, reviewRes, meRes] = await Promise.all([
@@ -62,13 +65,16 @@ export default function OrderHistory() {
       );
       setReviewedOrderIds(reviewed);
     } catch {
-      setError("Could not load orders.");
+      if (!silent) setError("Could not load orders.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadOrders(); }, [loadOrders]);
+  useEffect(() => {
+    loadOrders();
+
+  }, [loadOrders]);
 
   async function handleAccept(orderId, listingTitle) {
     setActionLoading(orderId);

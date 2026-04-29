@@ -5,6 +5,7 @@ from .views import (
     PaymentListView,
     PaymentDetailView,
     create_payment_intent,
+    confirm_payment,
     payment_webhook,
     accept_order,
     reject_order,
@@ -24,5 +25,6 @@ urlpatterns = [
     path(
         "payments/create-intent/", create_payment_intent, name="payment-create-intent"
     ),
+    path("payments/confirm/", confirm_payment, name="payment-confirm"),
     path("payments/webhook/", payment_webhook, name="payment-webhook"),
 ]

@@ -22,7 +22,7 @@ export default function Messages() {
   useEffect(() => {
     api.get("/api/auth/me/")
       .then((res) => setCurrentUser(res.data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const fetchMessages = useCallback(async () => {
@@ -59,7 +59,7 @@ export default function Messages() {
 
       setConversations(convList);
     } catch {
-      setError("Could not load messages.");
+      if (loading) setError("Could not load messages.");
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,11 @@ export default function Messages() {
   useEffect(() => {
     if (!currentUser) return;
     fetchMessages();
-    pollRef.current = setInterval(fetchMessages, 2000);
+    pollRef.current = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchMessages();
+      }
+    }, 3000);
     return () => clearInterval(pollRef.current);
   }, [currentUser, fetchMessages]);
 
@@ -91,7 +95,7 @@ export default function Messages() {
 
     if (unreadMsgs.length > 0) {
       Promise.all(unreadMsgs.map((msg) =>
-        api.patch(`/api/messages/${msg.id}/read/`).catch(() => {})
+        api.patch(`/api/messages/${msg.id}/read/`).catch(() => { })
       )).then(() => {
         fetchMessages();
       });
