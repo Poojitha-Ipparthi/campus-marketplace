@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { sendVerificationCode, verifyEmail, loginUser } from "../api/authApi";
+import { api } from "../api/client";
 
 export default function Verification() {
   const location = useLocation();
@@ -97,6 +98,16 @@ async function handleVerify(e) {
     }
 
     sessionStorage.removeItem("pendingSignupPassword");
+
+    // Check if user is staff for admin access
+    try {
+      const meRes = await api.get("/api/auth/me/");
+      if (meRes.data.is_staff) {
+        localStorage.setItem("isStaff", "true");
+      } else {
+        localStorage.removeItem("isStaff");
+      }
+    } catch {}
 
     navigate("/listings");
   } catch (err) {

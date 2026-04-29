@@ -27,10 +27,6 @@ export default function LeaveReview() {
         setOrder(orderData);
         setCurrentUser(meRes.data);
 
-<<<<<<< Updated upstream
-=======
-        // Get seller details from the listing
->>>>>>> Stashed changes
         const listingRes = await api.get(`/api/listings/${orderData.listing}/`);
         setSellerId(listingRes.data.seller);
         setSellerName(

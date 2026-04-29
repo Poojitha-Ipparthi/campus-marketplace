@@ -11,22 +11,23 @@ import {
     getAdminPayments,
 } from "../api/adminApi";
 
-function normalizeList(data, key) {
+/*
+ * Normalizes API list responses — handles plain arrays,
+ * paginated results, and keyed objects.
+ */
+function normalizeList(data) {
     if (Array.isArray(data)) return data;
     if (Array.isArray(data?.results)) return data.results;
-    if (Array.isArray(data?.[key])) return data[key];
     return [];
 }
 
 export default function AdminDashboard() {
     const [activeTab, setActiveTab] = useState("overview");
-
     const [stats, setStats] = useState(null);
     const [users, setUsers] = useState([]);
     const [listings, setListings] = useState([]);
     const [orders, setOrders] = useState([]);
     const [payments, setPayments] = useState([]);
-
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -48,18 +49,24 @@ export default function AdminDashboard() {
                     getAdminPayments(),
                 ]);
 
-            if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
+            if (statsRes.status === "fulfilled") {
+                setStats(statsRes.value.data);
+            }
             if (usersRes.status === "fulfilled") {
-                setUsers(normalizeList(usersRes.value.data, "users"));
+                setUsers(normalizeList(usersRes.value.data));
             }
             if (listingsRes.status === "fulfilled") {
-                setListings(normalizeList(listingsRes.value.data, "listings"));
+                setListings(normalizeList(listingsRes.value.data));
             }
             if (ordersRes.status === "fulfilled") {
-                setOrders(normalizeList(ordersRes.value.data, "orders"));
+                setOrders(normalizeList(ordersRes.value.data));
             }
             if (paymentsRes.status === "fulfilled") {
-                setPayments(normalizeList(paymentsRes.value.data, "payments"));
+                // Backend returns plain array directly
+                const data = paymentsRes.value.data;
+                setPayments(Array.isArray(data) ? data : normalizeList(data));
+            } else {
+                console.error("Payments fetch failed:", paymentsRes.reason);
             }
         } catch (err) {
             setError(
@@ -77,47 +84,31 @@ export default function AdminDashboard() {
             alert("Do not change staff users from this demo UI.");
             return;
         }
-
         const nextActiveState = !user.is_active;
         const actionText = nextActiveState ? "Activate" : "Deactivate";
-
         const confirmed = window.confirm(`${actionText} user ${user.email}?`);
         if (!confirmed) return;
 
         try {
             setError("");
-
             if (nextActiveState) {
                 const res = await updateAdminUser(user.id, { is_active: true });
-                setUsers((prev) =>
-                    prev.map((u) => (u.id === user.id ? res.data : u))
-                );
+                setUsers((prev) => prev.map((u) => (u.id === user.id ? res.data : u)));
             } else {
                 await deactivateAdminUser(user.id);
-                setUsers((prev) =>
-                    prev.map((u) =>
-                        u.id === user.id ? { ...u, is_active: false } : u
-                    )
-                );
+                setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, is_active: false } : u));
             }
         } catch (err) {
-            setError(
-                err.response?.data?.detail ||
-                `Could not ${actionText.toLowerCase()} user.`
-            );
+            setError(err.response?.data?.detail || `Could not ${actionText.toLowerCase()} user.`);
         }
     }
 
     async function handleVerifyUser(user) {
         if (user.verified) return;
-
         try {
             setError("");
-
             const res = await updateAdminUser(user.id, { verified: true });
-            setUsers((prev) =>
-                prev.map((u) => (u.id === user.id ? res.data : u))
-            );
+            setUsers((prev) => prev.map((u) => (u.id === user.id ? res.data : u)));
         } catch (err) {
             setError(err.response?.data?.detail || "Could not verify user.");
         }
@@ -126,23 +117,17 @@ export default function AdminDashboard() {
     async function handleUpdateListingStatus(listing, status) {
         try {
             setError("");
-
             const res = await updateAdminListing(listing.id, { status });
-            setListings((prev) =>
-                prev.map((item) => (item.id === listing.id ? res.data : item))
-            );
+            setListings((prev) => prev.map((item) => (item.id === listing.id ? res.data : item)));
         } catch {
             setError("Could not update listing.");
         }
     }
 
     async function handleDeleteListing(listing) {
-        const confirmed = window.confirm(`Remove listing "${listing.title}"?`);
-        if (!confirmed) return;
-
+        if (!window.confirm(`Remove listing "${listing.title}"?`)) return;
         try {
             setError("");
-
             await deleteAdminListing(listing.id);
             setListings((prev) => prev.filter((item) => item.id !== listing.id));
         } catch {
@@ -151,11 +136,7 @@ export default function AdminDashboard() {
     }
 
     if (loading) {
-        return (
-            <main className="container">
-                <p>Loading admin dashboard...</p>
-            </main>
-        );
+        return <main className="container"><p>Loading admin dashboard...</p></main>;
     }
 
     return (
@@ -165,38 +146,19 @@ export default function AdminDashboard() {
             {error && <p className="error">{error}</p>}
 
             <nav className="admin-tabs">
-                <button
-                    className={activeTab === "overview" ? "active" : ""}
-                    onClick={() => setActiveTab("overview")}
-                >
-                    Overview
-                </button>
-                <button
-                    className={activeTab === "users" ? "active" : ""}
-                    onClick={() => setActiveTab("users")}
-                >
-                    Users
-                </button>
-                <button
-                    className={activeTab === "listings" ? "active" : ""}
-                    onClick={() => setActiveTab("listings")}
-                >
-                    Listings
-                </button>
-                <button
-                    className={activeTab === "orders" ? "active" : ""}
-                    onClick={() => setActiveTab("orders")}
-                >
-                    Orders
-                </button>
-                <button
-                    className={activeTab === "payments" ? "active" : ""}
-                    onClick={() => setActiveTab("payments")}
-                >
-                    Payments
-                </button>
+                {["overview", "users", "listings", "orders", "payments"].map((tab) => (
+                    <button
+                        key={tab}
+                        className={activeTab === tab ? "active" : ""}
+                        onClick={() => setActiveTab(tab)}
+                    >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                        {tab === "payments" && payments.length > 0 && ` (${payments.length})`}
+                    </button>
+                ))}
             </nav>
 
+            {/* ── OVERVIEW ── */}
             {activeTab === "overview" && stats && (
                 <section className="admin-stats-grid">
                     <article className="admin-stat-card" onClick={() => setActiveTab("users")}>
@@ -221,50 +183,40 @@ export default function AdminDashboard() {
                     </article>
                     <article className="admin-stat-card" onClick={() => setActiveTab("payments")}>
                         <strong>Total Payments</strong>
-                        <span>{stats.total_payments}</span>
+                        <span>{stats.total_payments ?? payments.length}</span>
                     </article>
                 </section>
             )}
 
+            {/* ── USERS ── */}
             {activeTab === "users" && (
                 <section className="admin-section">
-                    <h2>Manage Users</h2>
-
+                    <h2>Manage Users ({users.length})</h2>
                     <div className="admin-table-wrap">
                         <table className="admin-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Email</th>
-                                    <th>Name</th>
-                                    <th>Verified</th>
-                                    <th>Trust Score</th>
-                                    <th>Staff</th>
-                                    <th>Active</th>
-                                    <th>Actions</th>
+                                    <th>ID</th><th>Email</th><th>Name</th>
+                                    <th>Verified</th><th>Trust Score</th>
+                                    <th>Staff</th><th>Active</th><th>Actions</th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 {users.map((user) => (
                                     <tr key={user.id}>
                                         <td>{user.id}</td>
                                         <td>{user.email}</td>
                                         <td>{user.full_name || "—"}</td>
-                                        <td>{user.verified ? "Yes" : "No"}</td>
+                                        <td>{user.verified ? "✅" : "❌"}</td>
                                         <td>{user.trust_score ?? "N/A"}</td>
                                         <td>{user.is_staff ? "Yes" : "No"}</td>
                                         <td>{user.is_active ? "Yes" : "No"}</td>
                                         <td className="admin-actions">
                                             {!user.verified && (
-                                                <button
-                                                    className="btn-activate"
-                                                    onClick={() => handleVerifyUser(user)}
-                                                >
+                                                <button className="btn-activate" onClick={() => handleVerifyUser(user)}>
                                                     Verify
                                                 </button>
                                             )}
-
                                             <button
                                                 className={user.is_active ? "btn-danger" : "btn-activate"}
                                                 onClick={() => handleToggleUserActive(user)}
@@ -280,40 +232,30 @@ export default function AdminDashboard() {
                 </section>
             )}
 
+            {/* ── LISTINGS ── */}
             {activeTab === "listings" && (
                 <section className="admin-section">
-                    <h2>Manage Listings</h2>
-
+                    <h2>Manage Listings ({listings.length})</h2>
                     <div className="admin-table-wrap">
                         <table className="admin-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>Seller</th>
-                                    <th>Price</th>
-                                    <th>Status</th>
-                                    <th>Condition</th>
-                                    <th>Actions</th>
+                                    <th>ID</th><th>Title</th><th>Seller</th>
+                                    <th>Price</th><th>Status</th><th>Condition</th><th>Actions</th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 {listings.map((listing) => (
                                     <tr key={listing.id}>
                                         <td>{listing.id}</td>
                                         <td>{listing.title}</td>
                                         <td>{listing.seller_email || "—"}</td>
-                                        <td>
-                                            {Number(listing.price) === 0 ? "Free" : `$${listing.price}`}
-                                        </td>
+                                        <td>{Number(listing.price) === 0 ? "Free" : `$${listing.price}`}</td>
                                         <td>
                                             <select
                                                 className="input"
                                                 value={listing.status}
-                                                onChange={(e) =>
-                                                    handleUpdateListingStatus(listing, e.target.value)
-                                                }
+                                                onChange={(e) => handleUpdateListingStatus(listing, e.target.value)}
                                             >
                                                 <option value="AVAILABLE">Available</option>
                                                 <option value="RESERVED">Reserved</option>
@@ -323,10 +265,7 @@ export default function AdminDashboard() {
                                         </td>
                                         <td>{listing.condition || "—"}</td>
                                         <td>
-                                            <button
-                                                className="danger-button"
-                                                onClick={() => handleDeleteListing(listing)}
-                                            >
+                                            <button className="danger-button" onClick={() => handleDeleteListing(listing)}>
                                                 Remove
                                             </button>
                                         </td>
@@ -338,33 +277,37 @@ export default function AdminDashboard() {
                 </section>
             )}
 
+            {/* ── ORDERS ── */}
             {activeTab === "orders" && (
                 <section className="admin-section">
-                    <h2>All Orders</h2>
-
+                    <h2>All Orders ({orders.length})</h2>
                     <div className="admin-table-wrap">
                         <table className="admin-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Listing</th>
-                                    <th>Buyer</th>
-                                    <th>Seller</th>
-                                    <th>Price</th>
-                                    <th>Status</th>
-                                    <th>Reserved Until</th>
+                                    <th>ID</th><th>Listing</th><th>Buyer</th>
+                                    <th>Price</th><th>Status</th><th>Reserved Until</th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 {orders.map((order) => (
                                     <tr key={order.id}>
                                         <td>{order.id}</td>
                                         <td>{order.listing_title || "—"}</td>
                                         <td>{order.buyer_email || "—"}</td>
-                                        <td>{order.seller_email || "—"}</td>
                                         <td>${order.offered_price}</td>
-                                        <td>{order.status}</td>
+                                        <td>
+                                            <span className="status-badge" style={{
+                                                background: order.status === "COMPLETED" ? "#dcfce7" :
+                                                    order.status === "ACCEPTED" ? "#dbeafe" :
+                                                        order.status === "PENDING" ? "#fef3c7" : "#fee2e2",
+                                                color: order.status === "COMPLETED" ? "#166534" :
+                                                    order.status === "ACCEPTED" ? "#1d4ed8" :
+                                                        order.status === "PENDING" ? "#92400e" : "#991b1b",
+                                            }}>
+                                                {order.status}
+                                            </span>
+                                        </td>
                                         <td>
                                             {order.reserved_until
                                                 ? new Date(order.reserved_until).toLocaleString()
@@ -378,26 +321,23 @@ export default function AdminDashboard() {
                 </section>
             )}
 
+            {/* ── PAYMENTS ── */}
             {activeTab === "payments" && (
                 <section className="admin-section">
-                    <h2>All Payments</h2>
-
+                    <h2>All Payments ({payments.length})</h2>
                     {payments.length === 0 ? (
-                        <p>No payments found.</p>
+                        <p style={{ color: "#777" }}>
+                            No payments found. Make sure you are logged in as a staff user.
+                        </p>
                     ) : (
                         <div className="admin-table-wrap">
                             <table className="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Order</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Stripe Intent</th>
-                                        <th>Date</th>
+                                        <th>ID</th><th>Order</th><th>Amount</th>
+                                        <th>Status</th><th>Stripe Intent</th><th>Date</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
                                     {payments.map((payment) => (
                                         <tr key={payment.id}>
@@ -407,8 +347,17 @@ export default function AdminDashboard() {
                                                 {(payment.currency || "USD").toUpperCase()}{" "}
                                                 {Number(payment.amount || 0).toFixed(2)}
                                             </td>
-                                            <td>{payment.status || "—"}</td>
-                                            <td>{payment.stripe_payment_intent_id || "—"}</td>
+                                            <td>
+                                                <span style={{
+                                                    color: payment.status === "SUCCEEDED" ? "#16a34a" : "#d97706",
+                                                    fontWeight: "600",
+                                                }}>
+                                                    {payment.status || "—"}
+                                                </span>
+                                            </td>
+                                            <td style={{ fontSize: "12px", color: "#777" }}>
+                                                {payment.stripe_payment_intent_id?.slice(0, 20)}...
+                                            </td>
                                             <td>
                                                 {payment.created_at
                                                     ? new Date(payment.created_at).toLocaleString()

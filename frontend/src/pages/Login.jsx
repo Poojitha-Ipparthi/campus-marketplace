@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/authApi";
+import { api } from "../api/client";
 
 export default function Login() {
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -32,6 +32,18 @@ export default function Login() {
                 localStorage.setItem("refreshToken", refresh);
             }
 
+            sessionStorage.removeItem("pendingSignupPassword");
+
+            // Check if user is staff/admin for admin dashboard access
+            try {
+                const meRes = await api.get("/api/auth/me/");
+                if (meRes.data.is_staff) {
+                    localStorage.setItem("isStaff", "true");
+                } else {
+                    localStorage.removeItem("isStaff");
+                }
+            } catch {}
+
             navigate("/listings");
         } catch (err) {
             const data = err.response?.data;
@@ -54,7 +66,6 @@ export default function Login() {
                 <h1>Campus Marketplace</h1>
                 <p>
                     Buy, sell, and give away items safely within your campus community.
-
                 </p>
             </section>
 
@@ -88,6 +99,7 @@ export default function Login() {
                             required
                         />
                     </label>
+
                     <Link to="/forgot-password" className="forgot-link">
                         Forgot password?
                     </Link>
