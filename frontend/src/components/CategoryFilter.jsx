@@ -2,12 +2,10 @@ export default function CategoryFilter({
   categories = [],
   category,
   condition,
-  status,
   minPrice,
   maxPrice,
   onCategoryChange,
   onConditionChange,
-  onStatusChange,
   onMinPriceChange,
   onMaxPriceChange,
   onApply,
@@ -40,21 +38,6 @@ export default function CategoryFilter({
           <option value="NEW">New</option>
           <option value="USED">Used</option>
         </select>
-
-        <select
-          className="input"
-          value={status}
-          onChange={(e) => onStatusChange(e.target.value)}
-        >
-          <option value="">Any Status</option>
-          <option value="AVAILABLE">Available</option>
-          <option value="RESERVED">Reserved</option>
-          <option value="SOLD">Sold</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
-      </div>
-
-      <div className="filter-row">
         <input
           className="input"
           type="number"

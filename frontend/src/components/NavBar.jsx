@@ -19,13 +19,13 @@ export default function NavBar() {
         const pendingSelling = sellRes.data.filter((o) => o.status === "PENDING").length;
         const acceptedBuying = buyRes.data.filter((o) => o.status === "ACCEPTED").length;
         setOrderBadge(pendingSelling + acceptedBuying);
-      }).catch(() => {});
+      }).catch(() => { });
 
       if (!location.pathname.startsWith("/messages")) {
         api.get("/api/messages/").then((res) => {
           const unread = res.data.filter((m) => !m.is_read).length;
           setMessageBadge(unread);
-        }).catch(() => {});
+        }).catch(() => { });
       } else {
         setMessageBadge(0);
       }
@@ -73,6 +73,7 @@ export default function NavBar() {
             </NavLink>
             <NavLink to="/create-listing" className="nav-link">+ Create a Listing</NavLink>
             <NavLink to="/profile" className="nav-link">Profile</NavLink>
+            <span className="help-icon">?</span>
           </>
         ) : (
           <>
