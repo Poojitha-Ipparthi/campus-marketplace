@@ -83,6 +83,12 @@ img {
   cursor: pointer;
 }
 
+.nav-button:hover {
+  background: #002f59;
+  color: white;
+  border: 2px solid white;
+}
+
 /* ===== Grid ===== */
 .grid {
   display: grid;

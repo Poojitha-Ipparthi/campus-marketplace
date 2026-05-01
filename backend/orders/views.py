@@ -319,3 +319,111 @@ def payment_webhook(request):
         )
 
     return Response({"detail": "Webhook received."}, status=status.HTTP_200_OK)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def accept_order(request, pk):
+    """Seller accepts a pending order and sets the reservation window."""
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
+
+            if order.listing.seller != request.user:
+                return Response({"detail": "Only the seller can accept this order."}, status=status.HTTP_403_FORBIDDEN)
+
+            if order.status != Order.Status.PENDING:
+                return Response({"detail": "Only pending orders can be accepted."}, status=status.HTTP_400_BAD_REQUEST)
+
+            order.status = Order.Status.ACCEPTED
+            order.reserved_until = timezone.now() + timedelta(minutes=3)
+            order.save(update_fields=["status", "reserved_until", "updated_at"])
+
+            order.listing.status = Listing.Status.RESERVED
+            order.listing.save(update_fields=["status"])
+
+        return Response(OrderSerializer(order, context={"request": request}).data)
+
+    except Order.DoesNotExist:
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def reject_order(request, pk):
+    """Seller declines a pending order."""
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
+
+            if order.listing.seller != request.user:
+                return Response({"detail": "Only the seller can decline this order."}, status=status.HTTP_403_FORBIDDEN)
+
+            if order.status != Order.Status.PENDING:
+                return Response({"detail": "Only pending orders can be declined."}, status=status.HTTP_400_BAD_REQUEST)
+
+            order.status = Order.Status.REJECTED
+            order.cancelled_by = "seller"
+            order.cancellation_reason = "seller_rejected"
+            order.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
+
+        return Response(OrderSerializer(order, context={"request": request}).data)
+
+    except Order.DoesNotExist:
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def cancel_order(request, pk):
+    """Buyer or seller cancels an order."""
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
+
+            is_buyer = order.buyer == request.user
+            is_seller = order.listing.seller == request.user
+
+            if not is_buyer and not is_seller:
+                return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
+
+            if order.status not in [Order.Status.PENDING, Order.Status.ACCEPTED]:
+                return Response({"detail": "This order cannot be cancelled."}, status=status.HTTP_400_BAD_REQUEST)
+
+            order.status = Order.Status.CANCELLED
+            order.cancelled_by = "buyer" if is_buyer else "seller"
+            order.cancellation_reason = "buyer_cancelled" if is_buyer else "seller_cancelled"
+            order.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
+
+            order.listing.status = Listing.Status.AVAILABLE
+            order.listing.save(update_fields=["status"])
+
+        return Response(OrderSerializer(order, context={"request": request}).data)
+
+    except Order.DoesNotExist:
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def complete_order(request, pk):
+    """Seller marks a free item order as complete after physical handoff."""
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_related("listing").select_for_update().get(pk=pk)
+
+            if order.listing.seller != request.user:
+                return Response({"detail": "Only the seller can complete this order."}, status=status.HTTP_403_FORBIDDEN)
+
+            if order.status != Order.Status.ACCEPTED:
+                return Response({"detail": "Only accepted orders can be completed."}, status=status.HTTP_400_BAD_REQUEST)
+
+            order.status = Order.Status.COMPLETED
+            order.save(update_fields=["status", "updated_at"])
+
+            order.listing.status = Listing.Status.SOLD
+            order.listing.save(update_fields=["status"])
+
+        return Response(OrderSerializer(order, context={"request": request}).data)
+
+    except Order.DoesNotExist:
+        return Response({"detail": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
