@@ -335,7 +335,7 @@ def accept_order(request, pk):
                 return Response({"detail": "Only pending orders can be accepted."}, status=status.HTTP_400_BAD_REQUEST)
 
             order.status = Order.Status.ACCEPTED
-            order.reserved_until = timezone.now() + timedelta(minutes=3)
+            order.reserved_until = timezone.now() + timedelta(hours=24)
             order.save(update_fields=["status", "reserved_until", "updated_at"])
 
             order.listing.status = Listing.Status.RESERVED
@@ -362,8 +362,8 @@ def reject_order(request, pk):
                 return Response({"detail": "Only pending orders can be declined."}, status=status.HTTP_400_BAD_REQUEST)
 
             order.status = Order.Status.REJECTED
-            order.cancelled_by = "seller"
-            order.cancellation_reason = "seller_rejected"
+            order.cancelled_by = Order.CancelledBy.SELLER
+            order.cancellation_reason = Order.CancellationReason.SELLER_UNAVAILABLE
             order.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
 
         return Response(OrderSerializer(order, context={"request": request}).data)
@@ -390,8 +390,8 @@ def cancel_order(request, pk):
                 return Response({"detail": "This order cannot be cancelled."}, status=status.HTTP_400_BAD_REQUEST)
 
             order.status = Order.Status.CANCELLED
-            order.cancelled_by = "buyer" if is_buyer else "seller"
-            order.cancellation_reason = "buyer_cancelled" if is_buyer else "seller_cancelled"
+            order.cancelled_by = Order.CancelledBy.BUYER if is_buyer else Order.CancelledBy.SELLER
+            order.cancellation_reason = Order.CancellationReason.BUYER_CHANGED_MIND if is_buyer else Order.CancellationReason.SELLER_UNAVAILABLE
             order.save(update_fields=["status", "cancelled_by", "cancellation_reason", "updated_at"])
 
             order.listing.status = Listing.Status.AVAILABLE
