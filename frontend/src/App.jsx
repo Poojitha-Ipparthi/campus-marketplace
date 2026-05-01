@@ -1,3 +1,12 @@
+/**
+ * Root component. Defines all client-side routes.
+ *
+ * Public routes (login, signup, verification) are accessible without authentication.
+ * All other routes are wrapped in ProtectedRoute.
+ * The /admin route is restricted to staff users only.
+ */
+
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -27,13 +36,13 @@ export default function App() {
     <BrowserRouter>
       <Layout>
         <Routes>
-          {/* Public routes */}
+          {/* Public routes — no authentication required */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/verify" element={<Verification />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
-          {/* Regular user routes */}
+          {/* Authenticated user routes — redirects to /login if not authenticated */}
           <Route path="/" element={<ProtectedRoute userOnly><Home /></ProtectedRoute>} />
           <Route path="/listings" element={<ProtectedRoute userOnly><Listings /></ProtectedRoute>} />
           <Route path="/listings/:id" element={<ProtectedRoute userOnly><ListingDetail /></ProtectedRoute>} />
@@ -48,7 +57,7 @@ export default function App() {
           <Route path="/report" element={<ProtectedRoute userOnly><Report /></ProtectedRoute>} />
           <Route path="/reviews/create/:orderId" element={<ProtectedRoute userOnly><LeaveReview /></ProtectedRoute>} />
 
-          {/* Admin-only route */}
+          {/* Admin-only route — redirects non-staff users to / */}
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         </Routes>
       </Layout>

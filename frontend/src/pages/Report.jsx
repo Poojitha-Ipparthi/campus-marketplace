@@ -1,3 +1,7 @@
+/**
+ * Report page for submitting reports about users or listings.
+ */
+
 import { useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";

@@ -1,3 +1,7 @@
+/**
+ * Listings page showing all available items with search and filter options.
+ */
+
 import { useEffect, useState } from "react";
 import { getCategories, getListings } from "../api/listingsApi";
 import CategoryFilter from "../components/CategoryFilter";

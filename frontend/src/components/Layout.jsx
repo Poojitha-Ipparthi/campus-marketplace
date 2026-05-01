@@ -1,3 +1,9 @@
+/**
+ * Page wrapper that conditionally renders the NavBar.
+ * The NavBar is hidden on auth-only screens (login, signup, verify)
+ * where navigation links are not relevant.
+ */
+
 import { useLocation } from "react-router-dom";
 import NavBar from "./NavBar";
 

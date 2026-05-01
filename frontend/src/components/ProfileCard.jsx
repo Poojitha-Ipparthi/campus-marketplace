@@ -1,3 +1,8 @@
+/**
+ * Displays a user's profile summary: name, email, trust score, member since date.
+ * Used on both the private UserProfile and public PublicProfile pages.
+ */
+
 export default function ProfileCard({ user, photo }) {
   if (!user) {
     return <p>Profile not available.</p>;

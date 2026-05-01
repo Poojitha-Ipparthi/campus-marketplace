@@ -1,3 +1,10 @@
+/**
+ * Public seller profile page.
+ *
+ * Displays active listings, sold count, and reviews received.
+ * Accessible from any listing's detail page via the View Seller Profile button.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, Link, useParams } from "react-router-dom";
 import { getListings } from "../api/listingsApi";

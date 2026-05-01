@@ -1,3 +1,12 @@
+/**
+ * Email verification screen shown after signup.
+ *
+ * Sends a one-time code to the user's campus email address and confirms it.
+ * On success, automatically logs the user in using the password stored
+ * temporarily in sessionStorage during the signup flow.
+ */
+
+
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { sendVerificationCode, verifyEmail, loginUser } from "../api/authApi";

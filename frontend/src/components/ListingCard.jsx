@@ -1,3 +1,8 @@
+/**
+ * Reusable card for displaying a listing in a grid.
+ * Shows the first image, title, price, condition, and status badge.
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import StatusBadge from "./StatusBadge";

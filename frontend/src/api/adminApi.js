@@ -1,3 +1,9 @@
+/**
+ * Admin dashboard API functions.
+ * All endpoints require is_staff = true on the backend — requests
+ * from non-staff users will be rejected.
+ */
+
 import { api } from "./client";
 
 export function getAdminStats() {

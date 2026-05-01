@@ -1,3 +1,16 @@
+/**
+ * Top navigation bar.
+ *
+ * Renders different links depending on authentication and staff status:
+ * - Unauthenticated: Login and Sign Up.
+ * - Staff/admin: Admin Dashboard and Logout only.
+ * - Regular user: Home, Orders, Messages, Create Listing, Profile, Logout.
+ *
+ * Polls every 2 seconds to update badge counts for pending orders
+ * and unread messages. Polling is skipped for admin users who do not
+ * need these counts.
+ */
+
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { api } from "../api/client";
@@ -10,6 +23,8 @@ export default function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
 
+
+  // Clear tokens and staff flag from localStorage, then redirect to login.
   function handleLogout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -17,6 +32,9 @@ export default function NavBar() {
     navigate("/login");
   }
 
+  // Fetch badge counts every 2 seconds for regular users.
+  // Order badge = pending seller orders + accepted buyer orders awaiting payment.
+  // Message badge = unread messages (suppressed while on the messages page).
   useEffect(() => {
     if (!isLoggedIn || isStaff) return;
 
@@ -50,6 +68,7 @@ export default function NavBar() {
     return () => clearInterval(interval);
   }, [isLoggedIn, isStaff, location.pathname]);
 
+  // Clear message badge immediately when navigating to the messages page.
   useEffect(() => {
     if (location.pathname.startsWith("/messages")) {
       setMessageBadge(0);
@@ -69,7 +88,8 @@ export default function NavBar() {
             <NavLink to="/signup" className="nav-link">Sign Up</NavLink>
           </>
         )}
-
+        
+        {/* Admin users see only the dashboard link */}
         {isLoggedIn && isStaff && (
           <>
             <NavLink to="/admin" className="nav-link">Admin Dashboard</NavLink>

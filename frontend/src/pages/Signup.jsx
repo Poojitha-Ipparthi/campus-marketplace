@@ -1,3 +1,9 @@
+/**
+ * Signup page with form for creating a new account.
+ * On success, redirects to the email verification page.
+ * Shows error messages for validation errors or if the email is already in use.
+ */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signupUser } from "../api/authApi";

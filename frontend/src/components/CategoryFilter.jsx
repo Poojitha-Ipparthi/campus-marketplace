@@ -1,3 +1,13 @@
+
+/**
+  * Filter controls for the listings page.
+  * Includes category dropdown, condition dropdown, and price range inputs.
+  * The parent component manages the filter state and applies it to the API requests.
+  * The Apply button triggers the onApply callback to fetch filtered results,
+  * while the Clear button resets all filters to their default state.
+ */
+
+
 export default function CategoryFilter({
   categories = [],
   category,

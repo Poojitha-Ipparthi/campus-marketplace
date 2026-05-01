@@ -1,3 +1,9 @@
+/**
+ * Listings API functions.
+ * getListings accepts filter params (seller, status, category, etc.)
+ * that map to Django query parameters on the backend.
+ */
+
 import { api } from "./client";
 
 export function getListings(params = {}) {

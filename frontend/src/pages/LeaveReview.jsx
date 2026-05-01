@@ -1,3 +1,11 @@
+/**
+ * Review submission form for completed orders.
+ *
+ * Fetches the listing to identify the seller before submitting, since the
+ * order serializer returns the seller ID and name which are used as the reviewee.
+ * The backend enforces that only buyers of completed orders can post reviews.
+ */
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";
@@ -129,7 +137,7 @@ export default function LeaveReview() {
           </p>
 
           <label className="label" style={{ marginTop: "20px" }}>
-            Comment (optional)
+            Comment
             <textarea
               className="input full-input"
               value={comment}

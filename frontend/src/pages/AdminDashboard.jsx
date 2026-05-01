@@ -1,3 +1,13 @@
+/**
+ * Admin dashboard — accessible to staff users only.
+ *
+ * All five data sets (stats, users, listings, orders, payments) are fetched
+ * in parallel using Promise.allSettled so a failure in one endpoint does not
+ * prevent the others from rendering.
+ *
+ * Tabs: Overview, Users, Listings, Orders, Payments.
+ */
+
 import { useEffect, useState } from "react";
 import {
     getAdminStats,

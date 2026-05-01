@@ -1,3 +1,12 @@
+/**
+ * Form for creating a new listing with up to 5 images.
+ *
+ * The listing record is created first, then images are uploaded sequentially
+ * to the backend which stores them in Firebase and saves the URLs to MySQL.
+ * On success, redirects to the listing detail page.
+ *
+ */
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";

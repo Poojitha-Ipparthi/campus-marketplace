@@ -1,3 +1,8 @@
+/**
+ * Renders a list of reviews with star ratings and comments.
+ * Used on the public seller profile page.
+ */
+
 export default function ReviewList({ reviews = [] }) {
   if (!reviews.length) {
     return (

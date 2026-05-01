@@ -1,3 +1,22 @@
+/**
+ * In-app messaging between buyers and sellers.
+ *
+ * Conversations are scoped per listing — one thread per buyer/seller/listing
+ * combination. This keeps context clear when a user is involved in multiple
+ * simultaneous transactions.
+ *
+ * Polls the backend every 3 seconds for new messages. Polling is paused
+ * when the browser tab is not visible. Messages are marked as read
+ * automatically when a conversation is opened.
+ *
+ * Opening from a listing page pre-selects the relevant conversation via
+ * ?listing= and ?receiver= URL params.
+ *
+ * Block/Unblock is available from the chat header. Blocked users cannot
+ * send messages in either direction.
+ */
+
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { api } from "../api/client";

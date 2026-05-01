@@ -1,3 +1,12 @@
+/**
+ * Detail view for a single listing.
+ *
+ * Action buttons are conditional on the viewer's relationship to the listing:
+ * - Owner: Edit Listing, Create Another.
+ * - Buyer (available listing): Buy Now or Claim Item (if item is free), Message Seller.
+ * - Any non-owner: View Seller Profile, Report Listing.
+ */
+
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { getListing } from "../api/listingsApi";

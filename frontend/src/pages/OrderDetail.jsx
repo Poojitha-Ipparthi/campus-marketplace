@@ -1,3 +1,19 @@
+/**
+ * Detailed view of a single order.
+ *
+ * Renders different status banners and action buttons depending on whether
+ * the viewer is the buyer or seller, and the current order state.
+ *
+ * Buyer actions vary by state: Pay Now (ACCEPTED), Cancel, Leave Review (COMPLETED).
+ * Seller actions vary by state: Accept/Decline (PENDING), Mark Handed Over (free items).
+ *
+ * Free items skip the Stripe payment step — the seller manually marks the
+ * order complete after the physical handoff.
+ *
+ * The ?paid=true query param is set by the Checkout page on success to show
+ * a payment confirmation state while the webhook processes in the background.
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";

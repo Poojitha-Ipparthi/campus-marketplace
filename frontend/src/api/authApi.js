@@ -1,3 +1,11 @@
+/**
+ * Authentication API functions — login, signup, email verification,
+ * password reset, and logout.
+ *
+ * Logout is client-side only: tokens are removed from localStorage 
+ * without calling the backend, since JWTs are stateless.
+ */
+
 import { api } from "./client";
 
 export function loginUser(data) {
@@ -16,6 +24,7 @@ export function verifyEmail(data) {
   return api.post("/api/auth/verify-code/", data);
 }
 
+// Clears stored tokens from localStorage — no server call needed.
 export function logoutUser() {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");

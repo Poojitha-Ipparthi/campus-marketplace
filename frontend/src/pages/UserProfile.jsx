@@ -1,3 +1,8 @@
+/**
+ * UserProfile page showing the logged-in user's profile information and stats.
+ * Also includes a logout button that clears the auth token and redirects to login.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getListings } from "../api/listingsApi";

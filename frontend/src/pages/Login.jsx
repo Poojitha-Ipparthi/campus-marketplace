@@ -1,3 +1,15 @@
+/**
+ * Login screen.
+ *
+ * On successful login, stores the JWT access and refresh tokens in localStorage.
+ * Fetches the user's profile immediately after to check staff status — if the user
+ * is a staff member, sets isStaff in localStorage and redirects to /admin.
+ * Regular users are redirected to /listings.
+ *
+ * If the backend indicates the account is unverified, the user is redirected
+ * to the email verification screen instead of showing a generic error.
+ */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../api/authApi";
@@ -27,6 +39,8 @@ export default function Login() {
             }
 
             localStorage.setItem("accessToken", access);
+
+            // Set the token immediately so the /me request below is authenticated.
             api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
 
             if (refresh) {
@@ -35,6 +49,8 @@ export default function Login() {
 
             sessionStorage.removeItem("pendingSignupPassword");
 
+            // Fetch the user profile to determine staff status.
+            // isStaff controls which navbar links are shown and which routes are accessible.
             let isStaff = false;
 
             try {

@@ -1,3 +1,13 @@
+/**
+ * Form for editing an existing listing.
+ *
+ * Pre-fills all fields from the current listing data on mount.
+ * Existing images can be deleted individually via the backend.
+ * New images can be added up to the 5-image maximum.
+ * Only the listing owner can reach this page — the component redirects
+ * away if the current user is not the seller.
+ */
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";

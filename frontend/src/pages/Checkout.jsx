@@ -1,3 +1,18 @@
+/**
+ * Stripe payment screen for an accepted order.
+ *
+ * Creates a Payment Intent on the backend, which returns a client secret.
+ * That secret is passed to Stripe's CardElement to render a secure card form.
+ * Card data is collected and processed entirely by Stripe — it never passes
+ * through the application server.
+ *
+ * On payment success, the backend receives a payment_intent.succeeded webhook
+ * from Stripe, which marks the order as COMPLETED and the listing as SOLD.
+ * The user is redirected to the order page with ?paid=true to show a
+ * confirmation state while the webhook processes.
+ */
+
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "../api/client";

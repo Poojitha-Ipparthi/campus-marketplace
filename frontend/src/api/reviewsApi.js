@@ -1,3 +1,8 @@
+/**
+ * Reviews API functions.
+ * Supports filtering by order ID, reviewer, and reviewee via query params.
+ */
+
 import { api } from "./client";
 
 export function getReviews(params = {}) {

@@ -1,3 +1,15 @@
+/**
+ * Order history page with two tabs: My Purchases (buyer) and My Sales (seller).
+ *
+ * Sellers can Accept, Decline, and Message Buyer directly from the list.
+ * Buyers can Pay Now for accepted orders and Leave Review for completed ones.
+ *
+ * Review deduplication: fetches all reviews by the current user on load
+ * and builds a Set of reviewed order IDs to hide the Leave Review button
+ * for orders that have already been reviewed.
+ */
+
+
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
