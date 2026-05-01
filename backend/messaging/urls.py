@@ -1,3 +1,7 @@
+"""
+URL routes for message list, detail, and read-status endpoints.
+"""
+
 from django.urls import path
 from .views import MessageListCreateView, MessageDetailView, MarkMessageReadView
 

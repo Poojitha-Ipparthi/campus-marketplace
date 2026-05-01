@@ -1,3 +1,9 @@
+"""
+Serializers for reporting and blocking APIs.
+
+Validates block/report requests before saving them.
+"""
+
 from rest_framework import serializers
 from .models import BlockedUser, Report
 
@@ -6,20 +12,25 @@ class BlockedUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = BlockedUser
         fields = ["id", "blocker", "blocked", "created_at"]
+
+        # Blocker is set from request user; timestamps are system-controlled
         read_only_fields = ["blocker", "created_at"]
 
     def validate(self, attrs):
         request = self.context.get("request")
         blocked = attrs.get("blocked")
 
+        # Skip validation if request context is missing
         if not request or not request.user.is_authenticated:
             return attrs
 
+        # Prevent users from blocking themselves
         if blocked == request.user:
             raise serializers.ValidationError(
                 {"blocked": "A user cannot block themselves."}
             )
 
+        # Prevent duplicate block relationships
         if (
             blocked
             and BlockedUser.objects.filter(
@@ -46,6 +57,8 @@ class ReportSerializer(serializers.ModelSerializer):
             "status",
             "created_at",
         ]
+
+        # Reporter is set automatically; status handled by system/admin
         read_only_fields = ["reporter", "status", "created_at"]
 
     def validate(self, attrs):
@@ -53,6 +66,7 @@ class ReportSerializer(serializers.ModelSerializer):
         reported_listing = attrs.get("reported_listing")
         reported_message = attrs.get("reported_message")
 
+        # Ensure report targets at least one entity
         if not any([reported_user, reported_listing, reported_message]):
             raise serializers.ValidationError(
                 {

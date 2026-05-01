@@ -1,3 +1,10 @@
+"""
+API views for order lifecycle and payment actions.
+
+Handles order creation, acceptance, rejection, cancellation,
+completion, and Stripe payment integration.
+"""
+
 import os
 import json
 import stripe
@@ -23,6 +30,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated, IsVerified]
 
+    # Return orders based on user role (buyer or seller)
     def get_queryset(self):
         user = self.request.user
         role = self.request.query_params.get("role", "buyer")
@@ -43,6 +51,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         listing = serializer.validated_data.get("listing")
 
+        # Release expired reservation if listing is stuck in RESERVED state
         if listing and listing.status == Listing.Status.RESERVED:
             expired_order = Order.objects.filter(
                 listing=listing,
@@ -55,6 +64,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
                 listing.status = Listing.Status.AVAILABLE
                 listing.save(update_fields=["status"])
 
+        # Create order with current user as buyer
         serializer.save(buyer=self.request.user)
 
 
@@ -68,6 +78,7 @@ class PaymentListView(generics.ListAPIView):
     serializer_class = PaymentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    # Only show payments belonging to the logged-in user
     def get_queryset(self):
         return Payment.objects.filter(order__buyer=self.request.user).order_by(
             "-created_at"
@@ -82,6 +93,7 @@ class PaymentDetailView(generics.RetrieveAPIView):
         return Payment.objects.filter(order__buyer=self.request.user)
 
 
+# Update system state after successful payment
 def finalize_successful_payment(payment):
     order = payment.order
     listing = order.listing
@@ -101,11 +113,13 @@ def finalize_successful_payment(payment):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def create_payment_intent(request):
+    # Create or reuse Stripe payment intent for accepted orders
     order_id = request.data.get("order")
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
     try:
         with transaction.atomic():
+            # Lock order to prevent concurrent payment creation
             order = (
                 Order.objects.select_related("listing")
                 .select_for_update()
@@ -120,6 +134,7 @@ def create_payment_intent(request):
 
             existing_payment = Payment.objects.filter(order=order).first()
 
+            # Reuse existing pending payment instead of creating duplicate
             if existing_payment:
                 if existing_payment.status == Payment.Status.PENDING:
                     intent = stripe.PaymentIntent.retrieve(
@@ -139,6 +154,7 @@ def create_payment_intent(request):
                     status=status.HTTP_409_CONFLICT,
                 )
 
+            # Create Stripe payment intent and store it
             intent = stripe.PaymentIntent.create(
                 amount=int(float(order.offered_price) * 100),
                 currency="usd",
@@ -181,6 +197,7 @@ def create_payment_intent(request):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def confirm_payment(request):
+    # Confirm payment with Stripe and finalize order
     payment_intent_id = request.data.get("payment_intent_id")
 
     if not payment_intent_id:
@@ -193,6 +210,7 @@ def confirm_payment(request):
 
     try:
         with transaction.atomic():
+            # Lock payment and order to prevent race conditions
             payment = (
                 Payment.objects.select_related("order", "order__listing")
                 .select_for_update()
@@ -204,6 +222,7 @@ def confirm_payment(request):
 
             intent = stripe.PaymentIntent.retrieve(payment_intent_id)
 
+            # Ensure Stripe confirms success before updating system
             if intent.status != "succeeded":
                 return Response(
                     {
@@ -237,6 +256,7 @@ def confirm_payment(request):
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
 def payment_webhook(request):
+    # Handle Stripe webhook events (async payment updates)
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
     payload = request.body
@@ -244,40 +264,32 @@ def payment_webhook(request):
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
     try:
+        # Verify webhook signature if configured
         if webhook_secret and sig_header:
             event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         else:
             event = json.loads(payload)
-    except ValueError:
+    except Exception:
         return Response(
-            {"detail": "Invalid payload."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    except stripe.error.SignatureVerificationError:
-        return Response(
-            {"detail": "Invalid signature."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    except Exception as e:
-        return Response(
-            {"detail": f"Webhook error: {str(e)}"},
+            {"detail": "Invalid webhook request."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     try:
+        # Handle successful payments
         if event["type"] == "payment_intent.succeeded":
             intent = event["data"]["object"]
 
             try:
-                payment = Payment.objects.select_related(
-                    "order",
-                    "order__listing",
-                ).get(stripe_payment_intent_id=intent["id"])
+                payment = Payment.objects.select_related("order", "order__listing").get(
+                    stripe_payment_intent_id=intent["id"]
+                )
 
                 finalize_successful_payment(payment)
             except Payment.DoesNotExist:
                 pass
 
+        # Handle failed payments
         elif event["type"] == "payment_intent.payment_failed":
             intent = event["data"]["object"]
 
@@ -291,6 +303,7 @@ def payment_webhook(request):
 
                 order = payment.order
 
+                # Cancel order and release listing
                 if order.status in [Order.Status.PENDING, Order.Status.ACCEPTED]:
                     order.cancel_due_to_payment_failure()
                     order.listing.status = Listing.Status.AVAILABLE
@@ -299,173 +312,10 @@ def payment_webhook(request):
             except Payment.DoesNotExist:
                 pass
 
-    except Exception as e:
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.error(f"Webhook processing error: {str(e)}")
-
+    except Exception:
         return Response(
-            {"detail": f"Processing error: {str(e)}"},
+            {"detail": "Webhook processing error."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    return Response(
-        {"detail": "Webhook received."},
-        status=status.HTTP_200_OK,
-    )
-
-
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def accept_order(request, pk):
-    try:
-        with transaction.atomic():
-            order = (
-                Order.objects.select_related("listing").select_for_update().get(pk=pk)
-            )
-            listing = order.listing
-
-            if request.user != listing.seller:
-                return Response(
-                    {"detail": "Only the seller can accept this order."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            if order.status != Order.Status.PENDING:
-                return Response(
-                    {"detail": "Only pending orders can be accepted."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            if listing.status != Listing.Status.AVAILABLE:
-                return Response(
-                    {"detail": "Listing is not available for reservation."},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            order.status = Order.Status.ACCEPTED
-            order.reserved_until = timezone.now() + timedelta(minutes=3)
-            order.save(update_fields=["status", "reserved_until", "updated_at"])
-
-            listing.status = Listing.Status.RESERVED
-            listing.save(update_fields=["status"])
-
-        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
-
-    except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-    except ValidationError as e:
-        return Response(
-            {"detail": e.messages},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    except IntegrityError:
-        return Response(
-            {"detail": "Conflict."},
-            status=status.HTTP_409_CONFLICT,
-        )
-
-
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def reject_order(request, pk):
-    try:
-        with transaction.atomic():
-            order = (
-                Order.objects.select_for_update().select_related("listing").get(pk=pk)
-            )
-
-            if request.user != order.listing.seller:
-                return Response(
-                    {"detail": "Only the seller can reject this order."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            order.reject()
-
-        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
-
-    except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-    except ValidationError as e:
-        return Response(
-            {"detail": e.messages},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def cancel_order(request, pk):
-    try:
-        with transaction.atomic():
-            order = (
-                Order.objects.select_for_update().select_related("listing").get(pk=pk)
-            )
-            listing = Listing.objects.select_for_update().get(pk=order.listing_id)
-
-            if request.user != order.buyer:
-                return Response(
-                    {"detail": "Only the buyer can cancel this order."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            order.cancel_by_buyer()
-
-            if listing.status == Listing.Status.RESERVED:
-                listing.status = Listing.Status.AVAILABLE
-                listing.save(update_fields=["status"])
-
-        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
-
-    except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-    except ValidationError as e:
-        return Response(
-            {"detail": e.messages},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def complete_order(request, pk):
-    try:
-        with transaction.atomic():
-            order = (
-                Order.objects.select_for_update().select_related("listing").get(pk=pk)
-            )
-            listing = Listing.objects.select_for_update().get(pk=order.listing_id)
-
-            if request.user != listing.seller:
-                return Response(
-                    {"detail": "Only the seller can complete this order."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            order.complete()
-            listing.status = Listing.Status.SOLD
-            listing.save(update_fields=["status"])
-
-        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
-
-    except Order.DoesNotExist:
-        return Response(
-            {"detail": "Order not found."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
-    except ValidationError as e:
-        return Response(
-            {"detail": e.messages},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    return Response({"detail": "Webhook received."}, status=status.HTTP_200_OK)

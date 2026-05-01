@@ -1,3 +1,9 @@
+"""
+API views for authentication, verification, profiles, and admin controls.
+
+Handles signup, login, email verification, password reset, and admin management.
+"""
+
 import random
 import string
 from datetime import timedelta
@@ -38,6 +44,7 @@ class IsVerified(permissions.BasePermission):
     message = "Please verify your email before accessing this feature."
 
     def has_permission(self, request, view):
+        # Allow only authenticated users who have verified their email
         return bool(
             request.user and request.user.is_authenticated and request.user.verified
         )
@@ -45,13 +52,14 @@ class IsVerified(permissions.BasePermission):
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.AllowAny]  # Registration is open to everyone
 
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        # Return the profile of the currently authenticated user
         return Response(UserSerializer(request.user).data)
 
 
@@ -81,8 +89,10 @@ class SendVerificationCodeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Invalidate any previously unused codes before issuing a new one
         EmailVerification.objects.filter(user=user, is_used=False).update(is_used=True)
 
+        # Generate a 6-digit numeric code
         code = "".join(random.choices(string.digits, k=6))
 
         EmailVerification.objects.create(
@@ -132,6 +142,7 @@ class VerifyCodeView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Fetch the most recent unused code that matches
         verification = (
             EmailVerification.objects.filter(user=user, code=code, is_used=False)
             .order_by("-created_at")
@@ -150,6 +161,7 @@ class VerifyCodeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Consume the code and mark the user as verified
         verification.is_used = True
         verification.save(update_fields=["is_used"])
 
@@ -163,6 +175,7 @@ class VerifyCodeView(APIView):
 
 
 class VerifiedTokenObtainPairView(TokenObtainPairView):
+    # Blocks login for users who haven't verified their email
     serializer_class = VerifiedTokenObtainPairSerializer
 
 
@@ -193,6 +206,7 @@ class PasswordResetRequestView(APIView):
                 fail_silently=False,
             )
 
+        # Always return 200 regardless of whether the email exists (prevents enumeration)
         return Response(
             {"detail": "If that email exists, a password reset code has been sent."},
             status=status.HTTP_200_OK,
@@ -229,6 +243,7 @@ class PasswordResetVerifyCodeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Code is valid — client can proceed to the confirm step
         return Response(
             {"detail": "Reset code verified."},
             status=status.HTTP_200_OK,
@@ -266,6 +281,7 @@ class PasswordResetConfirmView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Hash and save the new password, then consume the reset code
         user.set_password(new_password)
         user.save(update_fields=["password"])
 
@@ -282,6 +298,7 @@ class IsAdminUserOnly(permissions.BasePermission):
     message = "Admin access required."
 
     def has_permission(self, request, view):
+        # Restrict to authenticated staff/admin users only
         return bool(
             request.user and request.user.is_authenticated and request.user.is_staff
         )
@@ -291,6 +308,7 @@ class AdminStatsView(APIView):
     permission_classes = [IsAdminUserOnly]
 
     def get(self, request):
+        # Aggregate system-wide counts for the admin dashboard
         data = {
             "total_users": User.objects.count(),
             "active_users": User.objects.filter(is_active=True).count(),
@@ -330,6 +348,7 @@ class AdminUserDetailView(generics.RetrieveUpdateAPIView):
     def patch(self, request, *args, **kwargs):
         user = self.get_object()
 
+        # Whitelist of fields an admin is permitted to update
         allowed_fields = ["full_name", "verified", "is_active", "is_staff"]
         changed_fields = []
 
@@ -356,6 +375,7 @@ class AdminUserDeactivateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # Prevent an admin from locking themselves out
         if user == request.user:
             return Response(
                 {"detail": "You cannot deactivate your own admin account."},
@@ -376,6 +396,7 @@ class AdminListingListView(generics.ListAPIView):
     permission_classes = [IsAdminUserOnly]
 
     def get_queryset(self):
+        # Prefetch seller to avoid N+1 queries
         return Listing.objects.select_related("seller").order_by("-created_at")
 
 
@@ -387,6 +408,7 @@ class AdminListingDetailView(generics.RetrieveUpdateAPIView):
     def patch(self, request, *args, **kwargs):
         listing = self.get_object()
 
+        # Whitelist of fields an admin is permitted to update
         allowed_fields = ["title", "price", "status", "condition"]
         changed_fields = []
 
@@ -426,6 +448,7 @@ class AdminOrderListView(generics.ListAPIView):
     permission_classes = [IsAdminUserOnly]
 
     def get_queryset(self):
+        # Prefetch related models to avoid N+1 queries
         return Order.objects.select_related(
             "buyer",
             "listing",
@@ -447,7 +470,9 @@ class AdminPaymentListView(APIView):
     permission_classes = [IsAdminUserOnly]
 
     def get(self, request):
-        print("ADMIN PAYMENTS COUNT:", Payment.objects.count())
+        print(
+            "ADMIN PAYMENTS COUNT:", Payment.objects.count()
+        )  # TODO: remove debug logs
         print("ADMIN PAYMENTS:", list(Payment.objects.all().values()))
 
         payments = Payment.objects.select_related("order").order_by("-created_at")

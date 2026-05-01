@@ -1,3 +1,9 @@
+"""
+Order-related signal handlers.
+
+Recalculates trust scores when orders are created or updated.
+"""
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 

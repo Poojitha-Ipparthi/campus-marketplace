@@ -45,9 +45,7 @@ class ReportingAPITests(APITestCase):
     def authenticate(self, user):
         self.client.force_authenticate(user=user)
 
-    # -----------------------------
     # Block tests
-    # -----------------------------
     def test_authenticated_user_can_block_another_user(self):
         self.authenticate(self.user1)
 
@@ -110,9 +108,7 @@ class ReportingAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(BlockedUser.objects.filter(id=block.id).exists())
 
-    # -----------------------------
     # Report tests
-    # -----------------------------
     def test_user_can_report_another_user(self):
         self.authenticate(self.user1)
 

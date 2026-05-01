@@ -1,3 +1,9 @@
+"""
+Review permission rules.
+
+Controls who can create or access review records.
+"""
+
 from rest_framework.permissions import BasePermission
 
 

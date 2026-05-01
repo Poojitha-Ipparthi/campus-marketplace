@@ -1,3 +1,9 @@
+"""
+API tests for order and payment flows.
+
+Covers order creation, state transitions, permissions, and payment behavior.
+"""
+
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -116,9 +122,7 @@ class OrderAPITests(APITestCase):
 
         return order
 
-    # -----------------------------
     # Order creation tests
-    # -----------------------------
     def test_buyer_can_create_order(self):
         self.authenticate(self.buyer)
 
@@ -211,9 +215,7 @@ class OrderAPITests(APITestCase):
         response = self.client.post(self.orders_url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    # -----------------------------
     # Order detail tests
-    # -----------------------------
     def test_buyer_can_view_own_order_detail(self):
         order = self.create_pending_order()
 
@@ -240,9 +242,7 @@ class OrderAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    # -----------------------------
     # Accept tests
-    # -----------------------------
     def test_seller_can_accept_pending_order(self):
         order = self.create_pending_order()
 
@@ -283,9 +283,7 @@ class OrderAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
 
-    # -----------------------------
     # Reject tests
-    # -----------------------------
     def test_seller_can_reject_pending_order(self):
         order = self.create_pending_order()
 
@@ -313,9 +311,7 @@ class OrderAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # -----------------------------
     # Cancel tests
-    # -----------------------------
     def test_buyer_can_cancel_pending_order(self):
         order = self.create_pending_order()
 
@@ -374,9 +370,7 @@ class OrderAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # -----------------------------
-    # Complete tests
-    # -----------------------------
+    # Complete order tests
     def test_seller_can_complete_accepted_order(self):
         accepted_listing = Listing.objects.create(
             seller=self.seller,
@@ -416,9 +410,7 @@ class OrderAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # -----------------------------
     # Payment intent tests
-    # -----------------------------
     def test_buyer_can_create_payment_for_accepted_order(self):
         order = self.create_accepted_order()
 
@@ -470,9 +462,7 @@ class OrderAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    # -----------------------------
     # Payment list/detail tests
-    # -----------------------------
     def test_buyer_can_list_own_payments(self):
         order = self.create_accepted_order()
         Payment.objects.create(

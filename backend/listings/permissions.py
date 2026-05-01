@@ -1,3 +1,9 @@
+"""
+Custom listing permissions.
+
+Allows everyone to read listings, but only sellers can edit or delete their own listings.
+"""
+
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 

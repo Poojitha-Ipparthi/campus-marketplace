@@ -1,3 +1,9 @@
+"""
+API tests for listing features.
+
+Covers listing creation, updates, deletion, filtering, searching, and ordering.
+"""
+
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -57,9 +63,7 @@ class ListingAPITests(APITestCase):
     def authenticate(self, user):
         self.client.force_authenticate(user=user)
 
-    # -----------------------------
     # Category tests
-    # -----------------------------
     def test_category_list_returns_all_categories(self):
         response = self.client.get(self.category_list_url)
 
@@ -73,9 +77,7 @@ class ListingAPITests(APITestCase):
         self.assertEqual(response.data["id"], self.category1.id)
         self.assertEqual(response.data["name"], "Electronics")
 
-    # -----------------------------
     # Listing create tests
-    # -----------------------------
     def test_authenticated_user_can_create_listing(self):
         self.authenticate(self.seller)
 
@@ -124,9 +126,7 @@ class ListingAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # -----------------------------
     # Listing detail tests
-    # -----------------------------
     def test_listing_detail_returns_single_listing(self):
         response = self.client.get(f"/api/listings/{self.listing1.id}/")
 
@@ -134,9 +134,7 @@ class ListingAPITests(APITestCase):
         self.assertEqual(response.data["id"], self.listing1.id)
         self.assertEqual(response.data["title"], "Dell Laptop")
 
-    # -----------------------------
     # Update tests
-    # -----------------------------
     def test_owner_can_update_listing(self):
         self.authenticate(self.seller)
 
@@ -169,9 +167,7 @@ class ListingAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    # -----------------------------
     # Delete tests
-    # -----------------------------
     def test_owner_can_delete_listing(self):
         self.authenticate(self.seller)
 
@@ -188,9 +184,7 @@ class ListingAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(Listing.objects.filter(id=self.listing1.id).exists())
 
-    # -----------------------------
     # Filter tests
-    # -----------------------------
     def test_filter_by_condition(self):
         response = self.client.get(f"{self.list_url}?condition=USED")
 
@@ -255,9 +249,7 @@ class ListingAPITests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], self.listing3.id)
 
-    # -----------------------------
     # Search tests
-    # -----------------------------
     def test_search_by_title(self):
         response = self.client.get(f"{self.list_url}?search=laptop")
 
@@ -272,9 +264,7 @@ class ListingAPITests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], self.listing3.id)
 
-    # -----------------------------
     # Ordering tests
-    # -----------------------------
     def test_order_by_price_ascending(self):
         response = self.client.get(f"{self.list_url}?ordering=price")
 
@@ -289,9 +279,7 @@ class ListingAPITests(APITestCase):
         prices = [Decimal(item["price"]) for item in response.data]
         self.assertEqual(prices, sorted(prices, reverse=True))
 
-    # -----------------------------
     # Combined filter test
-    # -----------------------------
     def test_combined_filters(self):
         response = self.client.get(
             f"{self.list_url}?condition=USED&min_price=100&max_price=600&search=desk"
@@ -301,9 +289,7 @@ class ListingAPITests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], self.listing3.id)
 
-    # -----------------------------
     # Invalid filter value tests
-    # -----------------------------
     def test_invalid_condition_filter_returns_400(self):
         response = self.client.get(f"{self.list_url}?condition=INVALID")
 

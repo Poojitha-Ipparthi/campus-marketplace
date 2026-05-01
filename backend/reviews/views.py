@@ -1,3 +1,9 @@
+"""
+API views for creating and viewing reviews.
+
+Allows users to review completed transactions only.
+"""
+
 from django.db import IntegrityError
 from rest_framework import generics, permissions
 from rest_framework.exceptions import ValidationError
@@ -10,14 +16,15 @@ class ReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
 
     def get_permissions(self):
+        # Only allow review creation if user meets business rules
         if self.request.method == "POST":
             return [CanCreateReview()]
         return [permissions.AllowAny()]
 
     def get_queryset(self):
         """
-        Filter reviews by order ID and/or reviewer.
-        Supports ?order=<id> and ?reviewer=<id> query params.
+        Filter reviews by order, reviewer, or reviewee.
+        Supports ?order=<id>, ?reviewer=<id>, ?reviewee=<id>.
         """
         queryset = Review.objects.all().order_by("-created_at")
 
@@ -37,11 +44,11 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         try:
+            # Assign logged-in user as reviewer
             serializer.save(reviewer=self.request.user)
         except IntegrityError:
-            raise ValidationError(
-                {"detail": "You have already reviewed this order."}
-            )
+            # Prevent duplicate reviews for same order
+            raise ValidationError({"detail": "You have already reviewed this order."})
 
 
 class ReviewDetailView(generics.RetrieveAPIView):

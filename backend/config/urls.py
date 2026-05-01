@@ -1,3 +1,9 @@
+"""
+Main URL router for the backend API.
+
+Connects each app's routes under the /api/ path.
+"""
+
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView

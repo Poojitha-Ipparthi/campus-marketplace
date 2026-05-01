@@ -1,3 +1,9 @@
+"""
+Reporting-related signal handlers.
+
+Triggers trust score recalculation when reports change.
+"""
+
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 

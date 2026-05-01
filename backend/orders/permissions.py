@@ -1,3 +1,9 @@
+"""
+Order permission rules.
+
+Restricts order access to the buyer or the listing seller.
+"""
+
 from rest_framework.permissions import BasePermission
 
 

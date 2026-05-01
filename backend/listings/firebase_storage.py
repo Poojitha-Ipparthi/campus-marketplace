@@ -1,3 +1,9 @@
+"""
+Firebase Storage helper functions.
+
+Uploads listing images to Firebase and returns public image URLs.
+"""
+
 import uuid
 from firebase_admin import storage
 

@@ -1,3 +1,9 @@
+"""
+Database model for transaction reviews.
+
+Stores buyer-to-seller ratings and enforces review integrity rules.
+"""
+
 from rest_framework import serializers
 from .models import Review
 
