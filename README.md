@@ -180,9 +180,9 @@ campus-marketplace/
 
 ## Team
 
-- **Ameerat Bello** — Order management, buyer-to-seller flow, payments, messaging, signup school email verification and validation code, Stripe integration, block and report user safety features, create listing, edit listing, message and order notifications
+- **Ameerat Bello** — Order management, buyer-to-seller flow, payments, messaging, signup school email verification and validation code, Stripe integration, block and report user safety features, create listing, edit listing, message and order notifications, Firebase and Redis integration.
 
-- **Poojitha Ipparthi** — Signup and login pages, homepage, listings search, filters, and clear functionality, user profiles, frontend architecture, database set-up, admin dashboard, navbar, trust score logic
+- **Poojitha Ipparthi** — Signup and login pages, homepage, listings search, filters, and clear functionality, user profiles, frontend architecture, backend and environment setup, database implementation, business logic and validation, Django admin interface, and frontend dashboard, navbar, trust score logic, API creation, partial automated tests.
 
 ---
 
